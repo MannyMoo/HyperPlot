@@ -1,0 +1,11 @@
+
+doc/html/*
+doc/latex/*
+src/*.o
+example/*.pdf
+example/.*
+example/src/*.o
+example/src/TestBinning
+*sublime*
+
+
