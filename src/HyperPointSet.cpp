@@ -1,4 +1,6 @@
 #include "HyperPointSet.h"
+#include <algorithm>
+#include <functional>
 
 ///Standard constuctor where only the dimensionality is given
 ///
