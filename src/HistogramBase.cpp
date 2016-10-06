@@ -25,6 +25,33 @@ void HistogramBase::resetBinContents(int nBins){
   _sumW2       = std::vector<double>(nBins+1,0.0);
 }
 
+///Merge one HistogramBase with another
+///
+void HistogramBase::merge( const HistogramBase& other ){
+  
+  double overflowCont = _binContents.at(_nBins);
+  overflowCont += other._binContents.at(other._nBins);
+  
+  double overflowSumW2 = _sumW2.at(_nBins);
+  overflowSumW2 += other._sumW2.at(other._nBins);  
+  
+  _binContents.at(_nBins) = other._binContents.at(0);
+  _sumW2      .at(_nBins) = other._sumW2      .at(0);
+  
+  for (int i = 1; i < other._nBins; i++){
+    _binContents.push_back( other._binContents.at(i) );
+    _sumW2      .push_back( other._sumW2      .at(i) );    
+  }
+
+  _binContents.push_back( overflowCont  );
+  _sumW2      .push_back( overflowSumW2 );
+
+  _nBins += other._nBins;
+
+}
+
+
+
 /// Save the contents, sumw2, and bin numbers in a TTree
 /// to an open TFile
 void HistogramBase::saveBase(){

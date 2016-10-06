@@ -149,6 +149,48 @@ void HyperBinningHistogram::fill(const HyperPointSet& points){
 }
 
 /**
+Merge two HyperBinningHistograms
+*/
+void HyperBinningHistogram::merge( const HistogramBase& other ){
+  
+  const HyperBinningHistogram* histOther = dynamic_cast<const HyperBinningHistogram*>(&other);
+
+  if (histOther == 0){
+    ERROR_LOG << "The object passed to HyperBinningHistogram::merge is not of type ";
+    ERROR_LOG << "HyperBinningHistogram, so cannot merge";
+    return;    
+  }
+
+  _binning.mergeBinnings( histOther->_binning );
+  HistogramBase::merge( other );
+
+}
+
+
+
+/**
+Set the bin contents of the histogram using parsed function.
+Will set bin errors to zero and use bin centers for evaluating
+function
+*/
+void HyperBinningHistogram::setContentsFromFunc(const HyperFunction& func){
+  
+  int nbins = getNBins();
+  
+  for (int i = 0; i < nbins; i++){
+    HyperPoint binCenter = _binning.getBinHyperVolume(i).getAverageCenter();
+    double funcVal = func.getVal(binCenter);
+    setBinContent(i, funcVal);
+    setBinError  (i, 0  );
+  }
+  
+
+}
+
+
+
+
+/**
 Draw the HyperBinningHistogram - the drawing class
 used depends on the dimensionality of the data.
 This just plots the raw bin contents, not the 
@@ -287,11 +329,11 @@ HyperBinningHistogram HyperBinningHistogram::slice(std::vector<int> sliceDims, s
 
     HyperVolume vol       = getBinning().getBinHyperVolume(i);
     //std::cout << "  ----- Got original HyperVolume" << std::endl;
-    vol.print();
+    //vol.print();
 
     HyperVolume slicedVol = vol.slice(point, sliceDims);
     //std::cout << "  ----- Got sliced HyperVolume" << std::endl;
-    slicedVol.print();
+    //slicedVol.print();
 
     if (slicedVol.size() == 0) continue;
 

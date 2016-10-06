@@ -15,6 +15,7 @@
 #include "HyperVolumeBinning.h"
 #include "RootPlotter1D.h"
 #include "RootPlotter2D.h"
+#include "HyperFunction.h"
 
 // Root includes
 #include "TH1D.h"
@@ -42,6 +43,8 @@ class HyperBinningHistogram;
 class HyperBinningMaker {
 
   private:
+  
+  HyperBinningMaker();
 
   protected:
 
@@ -76,6 +79,12 @@ class HyperBinningMaker {
   /**< the status of each HyperVolume i.e. can we continue splitting it into more bins VolumeStatus::CONTINUE 
   or has it been split as many times as possible VolumeStatus::DONE */
 
+  std::vector< std::vector<int> >  _dimSpecificStatus;                
+  /**< the status of each HyperVolume dimension i.e. can we continue splitting it into more bins VolumeStatus::CONTINUE 
+  or has it been split as many times as possible VolumeStatus::DONE. This only applies to a specific dinemsion.
+  i.e. if the bin is < twice the minimum egde length, can safely say that it cannot be resplit in that dimension.
+  Note that if all dimensions are VolumeStatus::DONE, then _status should also be VolumeStatus::DONE!! */
+
   std::vector<int>                _binningDimensions;     
   /**< what dimensions are we allowed to bin in */
   
@@ -107,6 +116,13 @@ class HyperBinningMaker {
 
   int _iterationNum;
   /**< what iteration are we on */
+
+  HyperName _names;
+  /**< used for the axis titles on any of the HyperBinningHistograms I create */
+  
+  HyperFunction* _func;
+  /**< Some binning algorithms are based on a function rather than a dataset*/
+
 
   bool isValidBinningDimension(int dimension);
 
@@ -155,13 +171,31 @@ class HyperBinningMaker {
   void setShadowMinimumBinContent(double val);
   void setMinimumEdgeLength(double val);     
   void setMinimumEdgeLength(HyperPoint val);  
+  
+  void setHyperFunction(HyperFunction* fnc);  
+  
 
   /*----------------------------------------------------------------*/
+  
+  int& getGlobalVolumeStatus(int volumeNumber){return _status.at(volumeNumber);}
 
+  int& getDimensionSpecificVolumeStatus(int volumeNumber, int dimension){return _dimSpecificStatus.at(volumeNumber).at(dimension);}
+
+  const int& getGlobalVolumeStatus(int volumeNumber) const {return _status.at(volumeNumber);}
+
+  const int& getDimensionSpecificVolumeStatus(int volumeNumber, int dimension) const {return _dimSpecificStatus.at(volumeNumber).at(dimension);}
+
+
+  void setDimSpecStatusFromMinBinWidths(int volumeNumber);
+  void updateGlobalStatusFromDimSpecific(int volumeNumber);
+
+
+  int getNumContinueBins(int dimension = -1) const;
   int getNumBins() const;
   int getNumHyperVolumes() const;
 
-      
+  void setNames(HyperName names){_names = names;}
+  /**< used for the axis titles on any of the HyperBinningHistograms I create */    
 
   TH1D* scanSig(int binNumber, int dimension, int nbins, bool useConstraints = true);
   void  getSplitToMinNeg2LLH(double& split, double& sig, int binNumber, int dimension, bool useConstraints = true);
@@ -180,6 +214,9 @@ class HyperBinningMaker {
   int splitAll(int dimension, double splitPoint);
   int smartSplitAll(int dimension, double dataFraction);
   int smartSplitAllInt(int dimension, double dataFraction);
+
+  virtual int functionSplit(int binNumber, int dimension);
+  virtual int functionSplitAll(int dimension);
 
   //split the bin in a chosen dimension to give a chosen fraction of events in the resulting bin
   int smartSplit(int binNumber, int dimension, double dataFraction);
@@ -201,7 +238,8 @@ class HyperBinningMaker {
 
   ///Run the binning algorithm 
   virtual void makeBinning() = 0;
-
+  
+  virtual bool passFunctionCriteria(HyperCuboid& cuboid1, HyperCuboid& cuboid2);
 
   HyperVolumeBinning getHyperVolumeBinning() const;
   HyperBinningHistogram* getHyperBinningHistogram() const;

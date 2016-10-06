@@ -8,7 +8,9 @@ AlgOption::AlgOption() :
   _int(0),
   _double(0.0),
   _hyperPoint(0),
-  _hyperPointSet(0)
+  _hyperPointSet(0),
+  _hyperName(0),
+  _hyperFunc(0)
 {
   
 }
@@ -105,7 +107,8 @@ AlgOption AlgOption::UseShadowData      (const HyperPointSet& data){
 }
 
 
-
+///Use this if you want to draw the HyperBinning after every iteration
+///
 AlgOption AlgOption::DrawAlgorithm      (TString path){
   AlgOption algOption;
   algOption._optionName = DRAW_ALGORITHM;
@@ -113,7 +116,22 @@ AlgOption AlgOption::DrawAlgorithm      (TString path){
   return algOption;  
 }
 
+///Use this if you want to set the axis titles - can also do this later,
+///unless you want axis titles for the DrawAlgorithm() option.
+AlgOption AlgOption::AxisTitles         (HyperName name){
+  AlgOption algOption;
+  algOption._optionName = AXIS_NAMES;
+  algOption._hyperName = name;
+  return algOption;   
+}
 
+///Use this if you want to provide a HyperFunction
+AlgOption AlgOption::UseFunction          (HyperFunction* func){
+  AlgOption algOption;
+  algOption._optionName = FUNC;
+  algOption._hyperFunc = func;
+  return algOption;   
+}
 
 
 ///Get the AlgOption::OptionName 
@@ -175,6 +193,16 @@ const HyperPointSet&    AlgOption::getHyperPointSetOpt(){
   return *_hyperPointSet;
 }
 
+HyperFunction*       AlgOption::getFuncOpt         (){
+  return _hyperFunc;
+}
+
+
+///Get the HyperName member
+///
+HyperName           AlgOption::getHyperNameOpt   (){
+  return _hyperName;
+}
 
 ///Check if the OptionName is EMTPY
 /// 
@@ -197,7 +225,7 @@ AlgOption HyperBinningAlgorithms::getOpt(AlgOption::OptionName name){
     if (_algOptions.at(i).getOptionName() == name) return _algOptions.at(i);
   }
 
-  return AlgOption::Empty();
+  return AlgOption::Empty(); 
 }
 
 ///look through the list of AlgOption's and see if
@@ -224,7 +252,7 @@ void HyperBinningAlgorithms::addAlgOption(AlgOption option){
 ///Get the HyperBinningMaker (the binning algorithm) with the
 ///chosen algorithm type, and with the chosen AlgOption's
 HyperBinningMaker* HyperBinningAlgorithms::getHyperBinningMaker(HyperCuboid binningRange, HyperPointSet points){
-    
+     
   int dim = binningRange.getDimension();
 
   HyperBinningMaker* binnningMaker = 0;
@@ -259,7 +287,10 @@ HyperBinningMaker* HyperBinningAlgorithms::getHyperBinningMaker(HyperCuboid binn
   }  
   if (_alg == SMART_MULTI) {
     binnningMaker = new HyperBinningMakerMultiSmart(binningRange, points, startDimension);
-  }  
+  }
+  if (_alg == FUNC_PHASE) {
+    binnningMaker = new HyperBinningMakerPhaseBinning(binningRange, 0);
+  }
   //Now set the options
 
 
@@ -272,14 +303,16 @@ HyperBinningMaker* HyperBinningAlgorithms::getHyperBinningMaker(HyperCuboid binn
   if (optExist(AlgOption::BINNING_DIMS )) 
     binnningMaker->setBinningDimensions( getOpt(AlgOption::BINNING_DIMS).getIntVectorOpt() );
 
+  if (optExist(AlgOption::FUNC )) 
+    binnningMaker->setHyperFunction( getOpt(AlgOption::FUNC).getFuncOpt() );
+
   if (optExist(AlgOption::MIN_BIN_WIDTH )){
     //can provide either a double or a HyperPoint here.
 
-    HyperPoint widthsA = getOpt(AlgOption::BINNING_DIMS).getHyperPointOpt();
-    double     widthsB = getOpt(AlgOption::BINNING_DIMS).getDoubleOpt    (); 
+    HyperPoint widthsA = getOpt(AlgOption::MIN_BIN_WIDTH).getHyperPointOpt();
+    double     widthsB = getOpt(AlgOption::MIN_BIN_WIDTH).getDoubleOpt    (); 
     if ( widthsA.getDimension() == 0 ) widthsA = HyperPoint(dim, widthsB);
     binnningMaker->setMinimumEdgeLength(widthsA);
-
   }
 
   if (optExist(AlgOption::USE_SHADOW_DATA )) 
@@ -293,6 +326,9 @@ HyperBinningMaker* HyperBinningAlgorithms::getHyperBinningMaker(HyperCuboid binn
 
   if (optExist(AlgOption::DRAW_ALGORITHM )) 
     binnningMaker->drawAfterEachIteration( getOpt(AlgOption::DRAW_ALGORITHM).getStringOpt() );
+
+ if (optExist(AlgOption::AXIS_NAMES )) 
+    binnningMaker->setNames( getOpt(AlgOption::AXIS_NAMES).getHyperNameOpt() );
 
   
   return binnningMaker;

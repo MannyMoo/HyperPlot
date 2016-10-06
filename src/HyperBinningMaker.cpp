@@ -2,6 +2,18 @@
 
 #include "HyperBinningHistogram.h"
 
+///Just an empty contructor to make it compile (private, will never be used)
+///
+HyperBinningMaker::HyperBinningMaker() :
+  _minimumEdgeLength(0),
+  _drawAlgorithm          (false),  
+  _iterationNum           (0    ),
+  _names( 0 ),
+  _func( 0 )
+{
+
+}
+
 ///Constuctor which enables the user to create a binning scheme 
 ///for the HyperPointSet given, and using limits provided by a HyperCuboid.
 ///
@@ -11,15 +23,21 @@ HyperBinningMaker::HyperBinningMaker(const HyperCuboid& binningRange, const Hype
   _hyperPointSets         (1, filterHyperPointSet( data, binningRange, true )       ),
   _shadowHyperPointSets   (1, HyperPointSet( binningRange.getDimension() ) ), 
   _status                 (1, VolumeStatus::CONTINUE ),
+  _dimSpecificStatus      (1, std::vector<int>( binningRange.getDimension(), VolumeStatus::CONTINUE )  ),  
   _shadowAdded            (false),
   _useEventWeights        (false),
   _minimumBinContent      (15),
   _shadowMinimumBinContent(15),
   _minimumEdgeLength      ( HyperPoint(binningRange.getDimension(), 0.1) ),
-  _random                 (new TRandom3(0))
-{
-  for (int i = 0; i < data.getDimension(); i++) _binningDimensions.push_back(i);
+  _random                 (new TRandom3(0)),
+  _drawAlgorithm          (false),
+  _iterationNum           (0    ),
+  _names( binningRange.getDimension() ),
+  _func (0)
+{  
+  for (int i = 0; i < binningRange.getDimension(); i++) _binningDimensions.push_back(i);
   WELCOME_LOG << "Good day from the HyperBinningMaker() Constructor"<<std::endl;
+
 }
  
 ///Add a shadow HyperPointSet to the HyperBinningMaker. This must be done
@@ -51,7 +69,7 @@ HyperCuboid HyperBinningMaker::splitAbovePoint(int dim, double splitPoint, const
   HyperCuboid temp(newLowCorner, highCorner);
   return temp;
 
-}
+} 
 
 ///Split a HyperCuboid in a specific dimension, at point x_dim where: 
 ///
@@ -127,6 +145,10 @@ void HyperBinningMaker::addBin(const HyperCuboid& hyperCuboid, const HyperPointS
   _hyperCuboids  .push_back(hyperCuboid);
   _status        .push_back(status);
   _linkedBins    .push_back( std::vector<int>(0,0) );
+
+  std::vector<int> dimStatus( hyperCuboid.getDimension(), status);
+  _dimSpecificStatus.push_back(dimStatus);
+
 }
 
 ///Check that we are allowed to bin in this dimension
@@ -145,6 +167,69 @@ bool HyperBinningMaker::isValidBinningDimension(int dimension){
 
 }
 
+/**
+  This checks the bin width in each dimension agaisnt the minimum bin width for
+  that dimension. This is used to set the dimension speicific bin status. 
+  If every status is DONE then the global status can also be set to DONE.
+
+  Dimensions that are not in the list of binning dimensions are also, automatically
+  set to DONE.  
+*/
+void HyperBinningMaker::setDimSpecStatusFromMinBinWidths(int volumeNumber){
+
+  HyperCuboid&   chosenHyperCuboid          = _hyperCuboids        .at(volumeNumber);
+  
+  int dim = _hyperCuboids.at(0).getDimension();
+  
+  bool allDone = true;
+
+  for (int i = 0; i < dim; i++){
+    double low  =  chosenHyperCuboid.getLowCorner ().at(i);
+    double high =  chosenHyperCuboid.getHighCorner().at(i);
+    double width    = high - low;
+    double minwidth = _minimumEdgeLength.at(i);
+
+    if ( width < minwidth*2.0 || isValidBinningDimension(i) == false ) {
+      getDimensionSpecificVolumeStatus(volumeNumber, i) = VolumeStatus::DONE;
+    }
+    else{
+      allDone = false;
+    }
+
+  }  
+
+  if (allDone == true){
+    getGlobalVolumeStatus(volumeNumber) = VolumeStatus::DONE;
+  }
+
+}
+
+/**
+  For a given volume, see if all the dimension specific statuses are DONE.
+  If so, set the global status to DONE.
+*/
+void HyperBinningMaker::updateGlobalStatusFromDimSpecific(int volumeNumber){
+
+  int dim = _hyperCuboids.at(0).getDimension();
+  
+  bool allDone = true;
+
+  for (int i = 0; i < dim; i++){
+
+    int status = getDimensionSpecificVolumeStatus(volumeNumber, i);
+    
+    if (status != VolumeStatus::DONE){
+      allDone = false;
+      break;
+    }
+
+  }  
+
+  if (allDone == true){
+    getGlobalVolumeStatus(volumeNumber) = VolumeStatus::DONE;
+  }
+
+}
 
 /**
 This is the most important function in the class. It is used to split a specific
@@ -171,8 +256,10 @@ int HyperBinningMaker::split(int volumeNumber, int dimension, double splitPoint)
   
   //check if we're allowed to bin in this dimension
 
-  if (isValidBinningDimension(dimension) == false) return 0;
-  
+  if (isValidBinningDimension(dimension) == false) {
+    VERBOSE_LOG << "This isn't a valid binning dimension, so not splitting" << std::endl;    
+    return 0;
+  }
   
   //get the HyperPointSet, ShadowHyperPointSet, and HyperCuboid associated to
   //this volume number
@@ -191,7 +278,7 @@ int HyperBinningMaker::split(int volumeNumber, int dimension, double splitPoint)
 
   //first check if the new bins are too small - if they are, return 0
   if (edgeLength1 < minEdgeLength || edgeLength2 < minEdgeLength){
-    VERBOSE_LOG << "Tired to split bin but one half has too little events... hopefully spliting in another dim will help."<<std::endl;
+    VERBOSE_LOG << "Tired to split bin but one of the resulting bins is too small... hopefully spliting in another dim will help."<<std::endl;
     return 0;
   }  
 
@@ -224,6 +311,16 @@ int HyperBinningMaker::split(int volumeNumber, int dimension, double splitPoint)
     }
   }
 
+  //There is an option to pass a function - if so check that the new
+  //bins pass the 'function criteria' (in passFunctionCriteria).
+  //Default behaviour returns true, but some Algs may override this
+  if (_func != 0){
+    if ( passFunctionCriteria(cuboid1, cuboid2) == 0 ) {
+      VERBOSE_LOG << "I tired to split this bin but the Function criteria failed." <<std::endl;
+      return 0;
+    }
+  }
+
   // Add bins to the HyperVolume vector 
   // if the bin content is less than double the _minimumBinContent,
   // there is no way to split it any further. In this case, mark
@@ -249,26 +346,29 @@ int HyperBinningMaker::split(int volumeNumber, int dimension, double splitPoint)
   
   //Link the old bin to the new bins
 
-  int newBinNum1 = _hyperPointSets.size() - 2;
-  int newBinNum2 = _hyperPointSets.size() - 1; 
+  int newVolumeNum1 = _hyperPointSets.size() - 2;
+  int newVolumeNum2 = _hyperPointSets.size() - 1; 
   
   VERBOSE_LOG << "Linking old bin to new bins"<<std::endl;
-  _linkedBins.at(volumeNumber).push_back( newBinNum1 );
-  _linkedBins.at(volumeNumber).push_back( newBinNum2 );
+  _linkedBins.at( volumeNumber ).push_back( newVolumeNum1 );
+  _linkedBins.at( volumeNumber ).push_back( newVolumeNum2 );
   
   //clear the HyperPoints and Shadow HyperPoints associated
   //to the original volume.
 
   int dim = _hyperPointSets.at(volumeNumber).getDimension();
 
-  VERBOSE_LOG << "Removing data associated with old bin..."<<std::endl;
+  VERBOSE_LOG << "Removing data associated with old bin..." << std::endl;
   _hyperPointSets      .at(volumeNumber) = HyperPointSet(dim);
   _shadowHyperPointSets.at(volumeNumber) = HyperPointSet(dim);
-  VERBOSE_LOG << "and setting it's status to 0"<<std::endl;
+  VERBOSE_LOG << "and setting it's status to 0" << std::endl;
 
   //finally, set the status of the original volume to DONE
 
   _status.at(volumeNumber) = VolumeStatus::DONE;
+
+  setDimSpecStatusFromMinBinWidths(newVolumeNum1);
+  setDimSpecStatusFromMinBinWidths(newVolumeNum2);
 
   return 1;
 
@@ -288,6 +388,18 @@ int HyperBinningMaker::split(int volumeNumber, int dimension, double splitPoint)
   //}
 
 }
+
+/// If a HyperFunction is passed through the setHyperFunction function,
+/// this function is called, and must return true for any successful bin split.
+/// Default behavour is to return true, but other derived classes can override
+bool HyperBinningMaker::passFunctionCriteria(HyperCuboid& cuboid1, HyperCuboid& cuboid2){
+  
+  cuboid1.getLowCorner();
+  cuboid2.getHighCorner();
+
+  return true; 
+}
+
 
 
 /// \todo remember how this works
@@ -339,6 +451,8 @@ double HyperBinningMaker::neg2LLH(int binNumber, int dimension, double splitPoin
   return -2.0*( shadowNBelow*log(PDFDenominatorBelow) + shadowNAbove*log(PDFDenominatorAbove) + nBelow*log(PDFNumeratorBelow) + nAbove*log(PDFNumeratorAbove) );
 
 }
+
+
 
 /// \todo remember how this works
 ///
@@ -643,6 +757,32 @@ int HyperBinningMaker::smartSplit(int binNumber, int dimension, double dataFract
   return split(binNumber, dimension, splitPoint);
 
 }
+ 
+///split based on the hyperfunction provided. This fuction can be overrided for
+///derived classes. Default behaviour just splits normally
+int HyperBinningMaker::functionSplit(int binNumber, int dimension){
+
+  return split(binNumber, dimension, 0.5);
+
+}
+
+///Split every volume with the CONTINUE status useing the functionSplit
+///function
+int HyperBinningMaker::functionSplitAll(int dimension){
+  
+  int initialSize = _hyperCuboids.size();
+  int nSplits = 0;
+
+  for (int i = 0; i < initialSize; i++){
+    if (_status.at(i) == VolumeStatus::CONTINUE) {
+      nSplits += functionSplit(i, dimension );
+    }
+  }
+
+  return nSplits;
+}
+
+
 
 ///Split a bin into N parts, each which contain the same number of events
 ///
@@ -817,6 +957,13 @@ void HyperBinningMaker::setMinimumBinContent(double val){
   _minimumBinContent = val;
 }
 
+
+///Set the HyperFunction - only used by some binning Algs
+void HyperBinningMaker::setHyperFunction(HyperFunction* fnc){
+  _func = fnc;
+} 
+
+
 ///Set the minimum bin content allowed in any bin 
 /// (calcualted from the shadow HyperPoints)
 void HyperBinningMaker::setShadowMinimumBinContent(double val){
@@ -859,6 +1006,35 @@ int HyperBinningMaker::getNumHyperVolumes() const{
 
 }
 
+///Find the number of bins with the global status of
+///CONTINUE, and the dimension specific status CONTINUE.
+///Note if the dimension given is -1, then only consider
+///Global status
+int HyperBinningMaker::getNumContinueBins(int dimension) const{
+  
+  int size  = getNumHyperVolumes();
+  int count = 0;
+  
+  //std::cout << "getNumContinueBins " << dimension << std::endl;
+
+  for (int i = 0; i < size; i++){
+    if ( getGlobalVolumeStatus(i) == VolumeStatus::CONTINUE ) {
+      if ( dimension == -1 ){
+        count++;
+      } 
+      else{
+        if ( getDimensionSpecificVolumeStatus(i, dimension) == VolumeStatus::CONTINUE ){
+          count++;
+        }
+      }
+    }
+  }  
+  
+  return count;
+}
+
+
+
 ///Use the current state of the HyperBinningMaker to create
 ///a HyperVolumeBinning
 HyperVolumeBinning HyperBinningMaker::getHyperVolumeBinning() const{
@@ -873,6 +1049,8 @@ HyperVolumeBinning HyperBinningMaker::getHyperVolumeBinning() const{
     temp.addHyperVolume(hyperVolume);
     for (unsigned j = 0; j < _linkedBins.at(i).size(); j++) temp.addHyperVolumeLink(i, _linkedBins.at(i).at(j));
   }
+
+  temp.addPrimaryVolumeNumber(0);
 
   if (s_printBinning == true) INFO_LOG << "Made HyperVolumeBinning"<<std::endl;
 
@@ -896,6 +1074,8 @@ HyperBinningHistogram* HyperBinningMaker::getHyperBinningHistogram() const{
   }
   
   if (s_printBinning == true) INFO_LOG << "Made HyperBinningHistogram"<<std::endl;
+  
+  histogram->setNames(_names);
 
   return histogram;
 
@@ -916,7 +1096,9 @@ HyperBinningHistogram* HyperBinningMaker::getShadowHyperBinningHistogram() const
   }
   
   if (s_printBinning == true) INFO_LOG << "Made HyperBinningHistogram"<<std::endl;
-
+  
+  histogram->setNames(_names);
+  
   return histogram;
 
 }

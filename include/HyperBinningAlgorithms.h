@@ -48,7 +48,9 @@ class AlgOption{
     MIN_SHADOW_BIN_CONTENT,     /**< Minimum bin content for shadow events */
     USE_WEIGHTS,                /**< Use weights for calculating the bin contents */
     USE_SHADOW_DATA,            /**< Use a show datatset */
-    DRAW_ALGORITHM              /**< Draw the binning at each iteration of the algorithm */
+    DRAW_ALGORITHM,             /**< Draw the binning at each iteration of the algorithm */
+    AXIS_NAMES,                 /**< The axis names (that are provided by a HyperName) */
+    FUNC                        /**< Pass a HyperFunction to the binning alg */
   };
 
   
@@ -63,6 +65,8 @@ class AlgOption{
   HyperPoint           _hyperPoint;     /**< HyperPoint     option */
   const HyperPointSet* _hyperPointSet;  /**< HyperPointSet  option */
   TString              _string;         /**< string         option */
+  HyperName            _hyperName;      /**< HyperName      option */
+  HyperFunction*       _hyperFunc;      /**< HyperFunction  option */
 
   AlgOption();
 
@@ -79,6 +83,9 @@ class AlgOption{
   static AlgOption UseWeights         (bool   val = true);
   static AlgOption UseShadowData      (const HyperPointSet& data);
   static AlgOption DrawAlgorithm      (TString path);
+  static AlgOption AxisTitles         (HyperName name);
+  static AlgOption UseFunction        (HyperFunction* func);
+
 
   bool isEmpty();
 
@@ -91,6 +98,9 @@ class AlgOption{
   std::vector<double>  getDoubleVectorOpt ();
   HyperPoint           getHyperPointOpt   ();
   const HyperPointSet& getHyperPointSetOpt();
+  HyperName            getHyperNameOpt    ();
+  HyperFunction*       getFuncOpt         ();
+
 
   ~AlgOption();
 
@@ -112,7 +122,7 @@ class HyperBinningAlgorithms{
 public:
 
   /** enum containing a list of the avalible binning algorithms */
-  enum Alg{ SMART, MINT, MINT_SMART, MINT_RANDOM ,SMART_RANDOM, LIKELIHOOD, SMART_LIKELIHOOD, SMART_MULTI };
+  enum Alg{ SMART, MINT, MINT_SMART, MINT_RANDOM ,SMART_RANDOM, LIKELIHOOD, SMART_LIKELIHOOD, SMART_MULTI, FUNC_PHASE };
 
 
 private:

@@ -36,7 +36,7 @@ shows a 1D example.
 
 ~~~
 
-Imagine we have a HyperPoint that falls into Bin 7. One would first check if it 
+Imagine we have a HyperPoint that falls into Bin 0. One would first check if it 
 falls into HyperVolume 0 (note the distiction here between Bin/HyperVolume Numbers as
 indicated by the figure). First we check if it falls into HyperVolume 0, then HyperVolume 1 or 2, then 
 HyperVolume 3 or 4, then HyperVolume 7 or 8. 
@@ -112,6 +112,32 @@ class HyperVolumeBinning {
   /**< 
     std::vector containing all of the HyperVolumes. Usually, not all of these are bins,
     but part of the bin hierarchy that is discussed in the class description.
+  */
+  
+  std::vector< int > _primaryVolumeNumbers;
+  /**<
+    Usually all bins will be accessed through one primary volume i.e. volume 0 in
+    the below example. If one wants to merge two binning schemes together e.g. 
+    Binning1 and Binning2 this involes appending the list of HyperVolumes from
+    Binning2 to Binning1. This brings a problem when trying to sort a HyperPoint
+    into a specific bin i.e. getBinNumber(HyperPoint) - if it belongs to Binning2, 
+    it will first have to check that it doesn't fall into any of the volumes in Binning1. 
+
+    To remedy this problem we introduce the list of primary volumes. If this list exists
+    i.e. its size is greater than 0, all the primary volumes will be checked first. The
+    existance of this list also implies that ALL volumes are linked to the primary volumes.  
+
+
+           HyperVolume Numbers 
+    
+     |-------------0-------------| 
+    
+     |------1------|------2------| 
+    
+     |--3---|---4--|---5---|--6--|
+    
+     |-7-|-8| 
+
   */
 
   std::vector< std::vector<int> > _linkedHyperVolumes; 
@@ -212,6 +238,10 @@ class HyperVolumeBinning {
   void save(TString filename) const;
   void save() const; 
   
+  void savePrimaryVolumeNumbers() const;
+  void loadPrimaryVolumeNumbers(TFile* file);
+
+
   void setNames( HyperName names ){ _names = names; }  /**< set the a name  for each dimension */
   HyperName getNames() const{return _names;}           /**< get the a names for each dimension */
   
@@ -219,7 +249,8 @@ class HyperVolumeBinning {
   int getHyperVolumeNumber(int binNumber) const;
   int getBinNum(int volumeNumber) const;
 
-  
+  void addPrimaryVolumeNumber(int volumeNumber);
+
   int getNumHyperVolumes() const;  
   int getNumBins() const;
   
@@ -232,6 +263,8 @@ class HyperVolumeBinning {
 
   bool addHyperVolume(const HyperVolume& hyperVolume);
   bool addHyperVolumeLink(int volumeNum, int linkedVolumeNum);
+
+  void mergeBinnings( const HyperVolumeBinning& other );
 
   HyperPoint getAverageBinWidth() const;
 

@@ -6,8 +6,8 @@
 ///zeroth weight.
 void HyperFunction::reweightDataset(HyperPointSet& points){
 
-  int npoints = points.size();
-
+  int npoints = points.size(); 
+ 
   for (int i = 0; i < npoints; i++){
 
     HyperPoint& point = points.at(i);

@@ -84,8 +84,9 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
   int  fill(const HyperPoint& coords, double weight);
   int  fill(const HyperPoint& coords);
   void fill(const HyperPointSet& points);
-  
 
+  virtual void merge( const HistogramBase& other );
+  
   void project(TH1D* histogram, const HyperCuboid& cuboid, double content, int dimension) const;
   void project(TH1D* histogram, const HyperVolume& hyperVolume, double content, int dimension) const;
   TH1D project(int dim = 0, int bins = 100, TString name = "projection") const;
@@ -108,7 +109,9 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
   void save(TString filename);
 
   void load(TString filename);
- 
+  
+  void setContentsFromFunc(const HyperFunction& func);
+
   void printFull() const;
  
   void draw(TString path);

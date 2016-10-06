@@ -61,10 +61,10 @@ void HyperBinningPainter2D::drawBinEdge(RootPlotter2D* plotter, HyperCuboid* bin
   TLine* topLine    = new TLine(bin->getLowCorner().at(0) , bin->getHighCorner().at(1), bin->getHighCorner().at(0) , bin->getHighCorner().at(1));
   TLine* bottomLine = new TLine(bin->getLowCorner().at(0) , bin->getLowCorner().at(1), bin->getHighCorner().at(0) , bin->getLowCorner().at(1));
   
-  leftLine  ->SetLineWidth((short)0.1);
-  rightLine ->SetLineWidth((short)0.1);
-  topLine   ->SetLineWidth((short)0.1);
-  bottomLine->SetLineWidth((short)0.1);
+  leftLine  ->SetLineWidth(1);
+  rightLine ->SetLineWidth(1);
+  topLine   ->SetLineWidth(1);
+  bottomLine->SetLineWidth(1);
 
   leftLine  ->SetLineColor(kBlack);
   rightLine ->SetLineColor(kBlack);
@@ -72,10 +72,10 @@ void HyperBinningPainter2D::drawBinEdge(RootPlotter2D* plotter, HyperCuboid* bin
   bottomLine->SetLineColor(kBlack);
 
 //
-  //leftLine  ->SetLineStyle(3);
+  leftLine  ->SetLineStyle(3);
   //rightLine ->SetLineStyle(3);
   //topLine   ->SetLineStyle(3);
-  //bottomLine->SetLineStyle(3);
+  bottomLine->SetLineStyle(3);
 
   plotter->addObject(leftLine);
   //plotter->addObject(rightLine);
@@ -200,7 +200,7 @@ void HyperBinningPainter2D::draw(TString path){
     plotter.addObject(box)  ;
     drawFilledBins(&plotter);
     drawBinEdges(&plotter)  ;
-    drawBinNumbers(&plotter);
+    //drawBinNumbers(&plotter);
   }
 
   plotter.plot(path, "COLZ");

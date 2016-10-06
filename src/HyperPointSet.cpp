@@ -1,6 +1,4 @@
 #include "HyperPointSet.h"
-#include <algorithm>
-#include <functional>
 
 ///Standard constuctor where only the dimensionality is given
 ///
@@ -19,6 +17,17 @@ HyperPointSet::HyperPointSet(TString path) :
   load(path);
 
 }
+
+///Constuctor for a HyperPointSet that repeats the same point
+///a total of npoints times.
+HyperPointSet::HyperPointSet(int npoints, const HyperPoint& point) :
+  _dimension(point.getDimension())
+{
+
+  for (int i = 0; i < npoints; i++) push_back(point);
+
+}
+
 
 ///Constuctor for a HyperPointSet that takes dimensionality from
 ///a given HyperPoint and adds that point to the HyperPointSet
@@ -168,7 +177,7 @@ void HyperPointSet::sort(){
 ///must be followed by sort()
 void HyperPointSet::removeDuplicates(){
 
-  INFO_LOG << "Removing all duplicates from the HyperPointSet - did you remember to call sort() first?!?";
+  //INFO_LOG << "Removing all duplicates from the HyperPointSet - did you remember to call sort() first?!?";
 
   HyperPointSet hyperPointSet(getDimension());
   

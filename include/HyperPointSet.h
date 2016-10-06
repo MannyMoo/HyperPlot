@@ -71,6 +71,8 @@ class HyperPointSet {
   HyperPointSet(const HyperPoint& point);
   HyperPointSet(const HyperPoint& point1, const HyperPoint& point2);
   HyperPointSet(const HyperPoint& point1, const HyperPoint& point2, const HyperPoint& point3);
+  HyperPointSet(int npoints, const HyperPoint& point);
+
   HyperPointSet(TString path);
 
   virtual ~HyperPointSet();

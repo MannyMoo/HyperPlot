@@ -53,6 +53,8 @@ class HistogramBase {
   
   void setBinContent(int bin, double val);
   void setBinError  (int bin, double val);
+  
+  virtual void merge( const HistogramBase& other ); 
 
   double getBinContent(int bin) const;
   double getBinError  (int bin) const;
