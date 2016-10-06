@@ -650,7 +650,6 @@ int HyperBinningMakerPhaseBinning::functionSplitRandom(int volumeNumber, int dim
   HyperPoint     lowPoint          = chosenHyperCuboid.getLowCorner ();
   HyperPoint     highPoint         = chosenHyperCuboid.getHighCorner();
   
-  double binWidth = highPoint.at(dimension) - lowPoint.at(dimension);
 
   //get the minumum bin width in the dimension we're splitting in
   double minBinWidth = _minimumEdgeLength.at(dimension);
@@ -764,6 +763,9 @@ int HyperBinningMakerPhaseBinning::functionSplitRandom(int volumeNumber, int dim
 
 bool HyperBinningMakerPhaseBinning::passFunctionCriteria(HyperCuboid& cuboid1, HyperCuboid& cuboid2){
   
+  cuboid1.getCenter();
+  cuboid2.getCenter();
+
   return true;
 
   //HyperPoint point1 = cuboid1.getCenter();

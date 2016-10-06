@@ -13,7 +13,7 @@ void testBinning(){
   //You can set whatever dimension you like here - but the plotting only really works for the 1D and 2D cases
   const int dim = 2;
   
-  double min = 0.0;
+  double min = 0.0;  
   double max = 1.0;
   
   gRandom->SetSeed(0);
@@ -96,14 +96,11 @@ void testBinning(){
 
 
 
-int main(int argc, char **argv) {
+int main() {
   
   LHCbStyle();
   
   testBinning();  
-
-  INFO_LOG << "What's going on";
-  ERROR_LOG << "What's going on" << std::endl;
 
   ERROR_COUNT
 
