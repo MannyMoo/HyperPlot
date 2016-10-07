@@ -124,37 +124,22 @@ class HyperBinningMaker {
   /**< Some binning algorithms are based on a function rather than a dataset*/
 
 
-  bool isValidBinningDimension(int dimension);
-
-  
-  void addBin(const HyperCuboid& hyperCuboid, const HyperPointSet& hyperPointSet, const HyperPointSet& shadowHyperPointSet, int status);
-  HyperPointSet filterHyperPointSet(const HyperPointSet& hyperPointSet, const HyperCuboid& hyperCuboid, bool print = false) const;
-  HyperCuboid splitBelowPoint(int dim, double splitPoint, const HyperCuboid& original) const;
-  HyperCuboid splitAbovePoint(int dim, double splitPoint, const HyperCuboid& original) const;
-
-  double getSumOfWeights(const HyperPointSet& hyperPointSet) const;
-  double getWeight(const HyperPoint& hyperPoint) const;              //Will return 1 if _useEventWeights is false. If not, get event weight 0.
-
-  double findSmartSplitPoint(int binNumber, int dimension, double dataFraction) const;
-  double findSmartSplitPointInt(int binNumber, int dimension, double dataFraction) const;
-
-  double countEventsBelowSplitPoint(int binNumber, int dimension, double splitPoint) const;
-  double countEventsInHyperCuboid(const HyperPointSet& hyperPointSet, const HyperCuboid& hyperCuboid) const;
-  double countShadowEventsBelowSplitPoint(int binNumber, int dimension, double splitPoint) const;
-
-  //int findFirstSplit() const;
-  //int resetSplitOrNots();
-
-  double neg2LLH(int binNumber, int dimension, double splitPoint, bool useConstraints = true);
-  double nullNeg2LLH(int binNumber);
-  
   public:
     
   HyperBinningMaker(const HyperCuboid& binningRange, const HyperPointSet& data);
   
-  //The following functions should be called before any binning 
-  //binning algorithms commence
   /* ----------------------------------------------------------------*/
+
+  virtual void makeBinning() = 0;
+  /**< This function needs to be defined in the derrived classes, and
+  runs the entire binning algorithm */
+
+
+  /* ----------------------------------------------------------------*/
+
+  //The following functions should be called before any binning 
+  //binning algorithms commence.
+
   static void setOutputLevel(bool val){s_printBinning = val;}
   /**< set the verbosity of the output - by default this is on */
 
@@ -164,6 +149,7 @@ class HyperBinningMaker {
   void addShadowHyperPointSet(const HyperPointSet& data);
 
   void setSeed(int seed);
+
   void useEventWeights(bool val = true){_useEventWeights = val;}
   /**< select if weighted event should be used - by default this is off */
 
@@ -174,72 +160,64 @@ class HyperBinningMaker {
   
   void setHyperFunction(HyperFunction* fnc);  
   
+  void drawAfterEachIteration(TString path);
+
+  void setNames(HyperName names){_names = names;}
+  /**< used for the axis titles on any of the HyperBinningHistograms I create */
 
   /*----------------------------------------------------------------*/
-  
-  int& getGlobalVolumeStatus(int volumeNumber){return _status.at(volumeNumber);}
 
+
+  int& getGlobalVolumeStatus(int volumeNumber){return _status.at(volumeNumber);}
   int& getDimensionSpecificVolumeStatus(int volumeNumber, int dimension){return _dimSpecificStatus.at(volumeNumber).at(dimension);}
 
   const int& getGlobalVolumeStatus(int volumeNumber) const {return _status.at(volumeNumber);}
-
   const int& getDimensionSpecificVolumeStatus(int volumeNumber, int dimension) const {return _dimSpecificStatus.at(volumeNumber).at(dimension);}
 
-
-  void setDimSpecStatusFromMinBinWidths(int volumeNumber);
-  void updateGlobalStatusFromDimSpecific(int volumeNumber);
-
-
   int getNumContinueBins(int dimension = -1) const;
-  int getNumBins() const;
+  int getNumBins        () const;
   int getNumHyperVolumes() const;
 
-  void setNames(HyperName names){_names = names;}
-  /**< used for the axis titles on any of the HyperBinningHistograms I create */    
 
-  TH1D* scanSig(int binNumber, int dimension, int nbins, bool useConstraints = true);
-  void  getSplitToMinNeg2LLH(double& split, double& sig, int binNumber, int dimension, bool useConstraints = true);
+  /*----------------------------------------------------------------*/
+  
+  //These functions are common to all the HyperBinning makers
+  //and used to divide bins and update their status, and check that
+  //the resulting bins are OK.
 
-  void  getDimWithLargestSplitSignificance(int& dim, double& split, int binNumber, bool useConstraints = true);
+  int  split(int volumeNumber, int dimension, double splitPoint);
 
+  HyperCuboid splitBelowPoint(int dim, double splitPoint, const HyperCuboid& original) const;
+  HyperCuboid splitAbovePoint(int dim, double splitPoint, const HyperCuboid& original) const;
 
-  int likelihoodSplit(int binNumber);
-  int likelihoodSplitAll();
-  int smartLikelihoodSplit(int binNumber);
-  int smartLikelihoodSplitAll();
+  double getSumOfWeights(const HyperPointSet& hyperPointSet) const;
+  double getWeight(const HyperPoint& hyperPoint) const;              //Will return 1 if _useEventWeights is false. If not, get event weight 0.
+  bool isValidBinningDimension(int dimension);
+  virtual bool passFunctionCriteria(HyperCuboid& cuboid1, HyperCuboid& cuboid2);
 
-  //split the bin in a chosen dimension
-  int split(int volumeNumber, int dimension, double splitPoint);
+  HyperPointSet filterHyperPointSet(const HyperPointSet& hyperPointSet, const HyperCuboid& hyperCuboid, bool print = false) const;
 
-  int splitAll(int dimension, double splitPoint);
-  int smartSplitAll(int dimension, double dataFraction);
-  int smartSplitAllInt(int dimension, double dataFraction);
+  void addBin(const HyperCuboid& hyperCuboid, const HyperPointSet& hyperPointSet, const HyperPointSet& shadowHyperPointSet, int status);
 
-  virtual int functionSplit(int binNumber, int dimension);
-  virtual int functionSplitAll(int dimension);
+  void setDimSpecStatusFromMinBinWidths (int volumeNumber);
+  void updateGlobalStatusFromDimSpecific(int volumeNumber);
 
-  //split the bin in a chosen dimension to give a chosen fraction of events in the resulting bin
-  int smartSplit(int binNumber, int dimension, double dataFraction);
-
-  int smartMultiSplit(int binNumber, int dimension, int parts);
-  int smartMultiSplit(int binNumber, int dimension);
-  int smartMultiSplitAll(int dimension);
-
-  int smartSplitInt(int binNumber, int dimension, double dataFraction);
-
-  int smartSplitAllRandomise(double dataFraction = 0.5);
-  int splitAllRandomise(double splitPoint = 0.5);
-
+  
+  /* ----------------------------------------------------------------*/
+  
+  virtual void startedAlgorithm();
+  virtual void startedIteration();  
 
   void drawCurrentState(TString path) const;
-  void finishedIteration();
-  
-  void drawAfterEachIteration(TString path);
 
-  ///Run the binning algorithm 
-  virtual void makeBinning() = 0;
+  virtual void finishedIteration();  
+  virtual void finishedAlgorithm();
+
   
-  virtual bool passFunctionCriteria(HyperCuboid& cuboid1, HyperCuboid& cuboid2);
+  /* ----------------------------------------------------------------*/
+  
+  // These functions can be used to get a 
+  // HyperBinningHistogram of the current state 
 
   HyperVolumeBinning getHyperVolumeBinning() const;
   HyperBinningHistogram* getHyperBinningHistogram() const;
@@ -247,6 +225,59 @@ class HyperBinningMaker {
   HyperBinningHistogram* getRatioHyperBinningHistogram() const;
 
   virtual ~HyperBinningMaker();
+
+
+  /********************* NON ESSENTIAL ************************/
+
+
+  double countEventsBelowSplitPoint(int binNumber, int dimension, double splitPoint) const;
+  double countEventsInHyperCuboid(const HyperPointSet& hyperPointSet, const HyperCuboid& hyperCuboid) const;
+  double countShadowEventsBelowSplitPoint(int binNumber, int dimension, double splitPoint) const;
+  
+  //split the bin in a chosen dimension to give a chosen fraction of events in the resulting bin
+  double findSmartSplitPoint(int binNumber, int dimension, double dataFraction) const;
+
+  int smartSplit   (int binNumber, int dimension, double dataFraction);
+  int smartSplitAll(int dimension, double dataFraction); 
+  int smartSplitAllRandomise(double dataFraction = 0.5);
+
+
+  int smartMultiSplit(int binNumber, int dimension, int parts);
+  int smartMultiSplit(int binNumber, int dimension);
+  int smartMultiSplitAll(int dimension);
+
+
+  double findSmartSplitPointInt(int binNumber, int dimension, double dataFraction) const;
+
+  int smartSplitInt(int binNumber, int dimension, double dataFraction);
+  int smartSplitAllInt(int dimension, double dataFraction);
+
+  int splitAll(int dimension, double splitPoint);
+  int splitAllRandomise(double splitPoint = 0.5);
+
+
+
+
+  //Likelihood shit
+
+  int likelihoodSplit(int binNumber);
+  int likelihoodSplitAll();
+
+  int smartLikelihoodSplit(int binNumber);
+  int smartLikelihoodSplitAll();
+
+  void  getSplitToMinNeg2LLH(double& split, double& sig, int binNumber, int dimension, bool useConstraints = true);
+
+  void  getDimWithLargestSplitSignificance(int& dim, double& split, int binNumber, bool useConstraints = true);
+
+  TH1D* scanSig(int binNumber, int dimension, int nbins, bool useConstraints = true);
+
+  double neg2LLH(int binNumber, int dimension, double splitPoint, bool useConstraints = true);
+  double nullNeg2LLH(int binNumber);
+
+
+
+
 
 };
 

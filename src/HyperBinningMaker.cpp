@@ -758,29 +758,6 @@ int HyperBinningMaker::smartSplit(int binNumber, int dimension, double dataFract
 
 }
  
-///split based on the hyperfunction provided. This fuction can be overrided for
-///derived classes. Default behaviour just splits normally
-int HyperBinningMaker::functionSplit(int binNumber, int dimension){
-
-  return split(binNumber, dimension, 0.5);
-
-}
-
-///Split every volume with the CONTINUE status useing the functionSplit
-///function
-int HyperBinningMaker::functionSplitAll(int dimension){
-  
-  int initialSize = _hyperCuboids.size();
-  int nSplits = 0;
-
-  for (int i = 0; i < initialSize; i++){
-    if (_status.at(i) == VolumeStatus::CONTINUE) {
-      nSplits += functionSplit(i, dimension );
-    }
-  }
-
-  return nSplits;
-}
 
 
 
@@ -1125,6 +1102,35 @@ void HyperBinningMaker::drawCurrentState(TString path) const{
   HyperBinningHistogram* hist = getHyperBinningHistogram();
   
   hist->drawDensity(path);
+
+}
+
+
+/** 
+Call this at the beginning of the algorithm
+*/
+void HyperBinningMaker::startedAlgorithm(){
+
+
+}
+
+
+/** 
+Call this at the end of the algorithm
+
+*/
+void HyperBinningMaker::finishedAlgorithm(){
+
+}
+
+
+/** 
+When making an algorithm, call this at the beginning of each iteration
+if possible
+*/
+void HyperBinningMaker::startedIteration(){
+
+
 
 }
 

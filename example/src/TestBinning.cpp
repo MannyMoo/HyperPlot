@@ -53,37 +53,48 @@ void testBinning(){
   binningDims.push_back(1);
 
   HyperBinningHistogram hist1(limits, points1, 
+
     /*** Name of the binning algorithm you want to use     */
     HyperBinningAlgorithms::SMART_MULTI, 
+
     /***  The minimum number of events allowed in each bin */
     /***  from the HyperPointSet provided (points1)        */
     AlgOption::MinBinContent      (35.0),    
+
     /*** The minimum number of events allowed in each bin  */
     /*** from the shadow HyperPointSet provided. Providing */
     /*** a shadow set is optional (see option below)       */
     AlgOption::MinShadowBinContent(35.0),    
+
     /*** This minimum bin width allowed. Can also pass a   */
     /*** HyperPoint if you would like different min bin    */
     /*** widths for each dimension                         */
     AlgOption::MinBinWidth        (0.0001),
+
     /*** If you want to use a shadow dataset, pass it here.*/
     /*** This is useful when you want to bin the ratio of  */
     /*** two samples.                                      */
     //AlgOption::UseShadowData      (points2),
+
     /*** If you want to use the sum of weights rather than */
     /*** the number of events, set this to true.           */    
     AlgOption::UseWeights         (false),
+
     /*** Some algorithms use a random number generator. Set*/
     /*** the seed here                                     */
     AlgOption::RandomSeed         (1),
+
     /*** What dimesnion would you like to split first? Only*/
     /*** applies to certain algortihms                     */
     AlgOption::StartDimension     (0),
+
     /*** What dimesnions would you like to bin in?         */
     AlgOption::BinningDimensions  (binningDims),
+
     /*** Setting this option will make the agorithm draw   */
     /*** the binning scheme at each iteration              */
     AlgOption::DrawAlgorithm("Algorithm")
+    
   );
   
   std::cout << "The maximum bin content is " << hist1.getMax() << std::endl;
