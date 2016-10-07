@@ -15,7 +15,7 @@ HyperPointSet::HyperPointSet(TString path) :
 {
 
   load(path);
-
+ 
 }
 
 ///Constuctor for a HyperPointSet that repeats the same point

@@ -22,7 +22,10 @@
 #include "TTree.h"
 
 // std includes
-
+#include <algorithm>
+#include <functional>
+#include <array>
+#include <iostream>
 
 
 class HyperPointSet {
