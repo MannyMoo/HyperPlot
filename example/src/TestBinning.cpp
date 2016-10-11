@@ -127,7 +127,7 @@ void testBinning(){
   hist1.draw("pullHist");
 }
 
-
+#include "HyperCuboidSet.h"
 
 int main() {
   

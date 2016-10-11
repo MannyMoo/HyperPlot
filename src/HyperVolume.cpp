@@ -16,6 +16,24 @@ HyperVolume::HyperVolume(const HyperPoint& lowCorner, const HyperPoint& highCorn
   _hyperCuboids.push_back(HyperCuboid(lowCorner, highCorner));
 }
 
+
+///Constuctor that adds just one HyperCuboid to the HyperVolume.
+HyperVolume::HyperVolume(const HyperCuboid& cuboid) :
+  _dimension ( cuboid.getDimension() )
+{
+
+  _hyperCuboids.push_back(cuboid);
+
+}
+
+///Constuctor that adds just two HyperCuboids to the HyperVolume.
+HyperVolume::HyperVolume(const HyperCuboid& cuboid1, const HyperCuboid& cuboid2) :
+  _dimension ( cuboid1.getDimension() )
+{
+  push_back(cuboid1);
+  push_back(cuboid2);
+}
+
 ///Check to see if a HyperPoint is within the HyperVolume
 ///
 bool HyperVolume::inVolume(const HyperPoint& coords) const{
@@ -81,6 +99,14 @@ void HyperVolume::addHyperCuboid(const HyperCuboid& hyperCuboid){
   if (hyperCuboid.getDimension() == _dimension) _hyperCuboids.push_back(hyperCuboid);
   else ERROR_LOG << "The HyperCuboid you are adding to this HyperVolume has the wrong dimension";
 }
+
+///add a HyperCuboid to the HyperVolume
+///
+void HyperVolume::push_back(const HyperCuboid& hyperCuboid){
+  addHyperCuboid(hyperCuboid);
+}
+
+
 
 ///Find the center of mass of the HyperVolume, assuming the mass
 ///is proportional to volume.
@@ -189,6 +215,22 @@ HyperVolume HyperVolume::slice(const HyperPoint& coords, std::vector<int> dims) 
   return slicedVolume;
 
 }
+
+///Split all of the HyperCuboids within the HyperVolume in the
+///dimension given, and at the fractionalSplitPoint given.
+HyperVolume HyperVolume::splitAll(int dimension, double fractionalSplitPoint){
+
+  HyperVolume hyperCuboidSet( getDimension() );
+
+  for (int i = 0; i < size(); i++){
+    at(i).split(dimension, fractionalSplitPoint, hyperCuboidSet);
+  }
+
+  return hyperCuboidSet;
+
+}
+
+
 
 ///Destructor
 ///

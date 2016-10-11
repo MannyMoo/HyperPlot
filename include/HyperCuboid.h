@@ -10,11 +10,14 @@
 #ifndef HYPERCUBOID_HH
 #define HYPERCUBOID_HH
 
+class HyperCuboid;
+
 // HyperPlot includes
 #include "MessageService.h"
 #include "HyperPoint.h"
 #include "HyperPlane.h"
 #include "HyperLine.h"
+#include "HyperCuboidSet.h"
 
 // Root includes
 
@@ -84,6 +87,18 @@ class HyperCuboid {
   /**< return the low HyperPoint corner */
   HyperPoint& getHighCorner() { return _highCorner; }
   /**< return the high HyperPoint corner */
+  
+  HyperCuboid splitAbove(int dimension, double fractionalSplitPoint) const;
+
+
+  HyperCuboid splitBelow(int dimension, double fractionalSplitPoint) const;
+
+
+  HyperCuboidSet split(int dimension, double fractionalSplitPoint) const;
+
+
+  void split(int dimension, double fractionalSplitPoint, HyperCuboidSet& set) const;
+
 
   bool setCorners(const HyperPoint& lowCorner, const HyperPoint& highCorner);
 

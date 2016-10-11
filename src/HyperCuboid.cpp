@@ -517,6 +517,89 @@ double HyperCuboid::volume() const{
 
 }
 
+///split the cuboid into two along the dimension given and 
+///return the resulting HyperCuboid. The fractional split 
+///point [0,1] decides where (in that dimesnion) the split is
+HyperCuboid HyperCuboid::splitBelow(int dimension, double fractionalSplitPoint) const{
+  
+  if (dimension < 0 || dimension >= getDimension()){
+    ERROR_LOG << "You cannot split in a dimension that doesn't exist!!" << std::endl;
+    return HyperCuboid(*this);
+  }
+  if (fractionalSplitPoint <= 0.0 || fractionalSplitPoint >= 1.0){
+    ERROR_LOG << "Your fractional split point must be between 0.0 and 1.0" << std::endl;
+    return HyperCuboid(*this);
+  }
+
+  HyperPoint lowCorner1 (_lowCorner );
+  HyperPoint highCorner1(_highCorner);
+  
+  double low   = _lowCorner .at(dimension);
+  double high  = _highCorner.at(dimension);
+  double width = high - low;
+
+  double splitCoord = low + width*fractionalSplitPoint;
+
+  highCorner1.at(dimension) = splitCoord;
+
+  HyperCuboid lowCuboid (lowCorner1, highCorner1); 
+  
+  return lowCuboid;
+
+} 
+
+///split the cuboid into two along the dimension given and 
+///return the resulting HyperCuboid. The fractional split 
+///point [0,1] decides where (in that dimesnion) the split is
+HyperCuboid HyperCuboid::splitAbove(int dimension, double fractionalSplitPoint) const{
+  
+  if (dimension < 0 || dimension >= getDimension()){
+    ERROR_LOG << "You cannot split in a dimension that doesn't exist!!" << std::endl;
+    return HyperCuboid(*this);
+  }
+  if (fractionalSplitPoint <= 0.0 || fractionalSplitPoint >= 1.0){
+    ERROR_LOG << "Your fractional split point must be between 0.0 and 1.0" << std::endl;
+    return HyperCuboid(*this);
+  }
+
+  HyperPoint lowCorner2 (_lowCorner );
+  HyperPoint highCorner2(_highCorner);
+  
+  double low   = _lowCorner .at(dimension);
+  double high  = _highCorner.at(dimension);
+  double width = high - low;
+
+  double splitCoord = low + width*fractionalSplitPoint;
+
+  lowCorner2 .at(dimension) = splitCoord;
+
+  HyperCuboid highCuboid(lowCorner2, highCorner2); 
+  
+  return highCuboid;
+
+}
+
+///split the cuboid into two along the dimension given and 
+///return the resulting HyperCuboids in a HyperCuboidSet. The fractional split 
+///point [0,1] decides where (in that dimesnion) the split is
+HyperCuboidSet HyperCuboid::split(int dimension, double fractionalSplitPoint) const{
+
+  return HyperCuboidSet(
+             splitBelow(dimension,fractionalSplitPoint), 
+             splitAbove(dimension,fractionalSplitPoint)
+             );
+
+}
+
+///split the cuboid into two along the dimension given and 
+///append the resulting HyperCuboids to the HyperCuboidSet given. The fractional split 
+///point [0,1] decides where (in that dimesnion) the split is
+void HyperCuboid::split(int dimension, double fractionalSplitPoint, HyperCuboidSet& set) const{
+
+  set.push_back( splitBelow(dimension,fractionalSplitPoint) );
+  set.push_back( splitAbove(dimension,fractionalSplitPoint) );
+
+}
 
 ///Destructor
 ///
