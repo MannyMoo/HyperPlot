@@ -250,7 +250,7 @@ void HyperBinningHistogram::printFull() const{
     _binning.getBinHyperVolume(i).getHyperCuboid(0).print();
   }
 
-  INFO_LOG << "Overflow: " << _binContents[_nBins];
+  INFO_LOG << "Overflow: " << _binContents[_nBins] << std::endl;
 
 }
 

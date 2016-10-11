@@ -23,6 +23,8 @@ HyperCuboid::HyperCuboid(const HyperPoint& lowCorner, const HyperPoint& highCorn
   }
   else{
     ERROR_LOG << "Your lowCorner isn't lower than your highCorner"<< std::endl;
+    _lowCorner .print();
+    _highCorner.print();
   }
 
 }
@@ -478,7 +480,7 @@ bool HyperCuboid::setCorners(const HyperPoint& lowCorner, const HyperPoint& high
     _highCorner = highCorner;
   }
   else{
-    ERROR_LOG << "Your lowCorner isn't lower than your highCorner";
+    ERROR_LOG << "Your lowCorner isn't lower than your highCorner" <<std::endl;
     return 0;
   }
   return 1;
