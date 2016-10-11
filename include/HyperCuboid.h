@@ -17,7 +17,7 @@ class HyperCuboid;
 #include "HyperPoint.h"
 #include "HyperPlane.h"
 #include "HyperLine.h"
-#include "HyperCuboidSet.h"
+#include "HyperVolume.h"
 
 // Root includes
 
@@ -94,10 +94,10 @@ class HyperCuboid {
   HyperCuboid splitBelow(int dimension, double fractionalSplitPoint) const;
 
 
-  HyperCuboidSet split(int dimension, double fractionalSplitPoint) const;
+  HyperVolume split(int dimension, double fractionalSplitPoint) const;
 
 
-  void split(int dimension, double fractionalSplitPoint, HyperCuboidSet& set) const;
+  void split(int dimension, double fractionalSplitPoint, HyperVolume& set) const;
 
 
   bool setCorners(const HyperPoint& lowCorner, const HyperPoint& highCorner);

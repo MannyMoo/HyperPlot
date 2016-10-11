@@ -582,9 +582,9 @@ HyperCuboid HyperCuboid::splitAbove(int dimension, double fractionalSplitPoint) 
 ///split the cuboid into two along the dimension given and 
 ///return the resulting HyperCuboids in a HyperCuboidSet. The fractional split 
 ///point [0,1] decides where (in that dimesnion) the split is
-HyperCuboidSet HyperCuboid::split(int dimension, double fractionalSplitPoint) const{
+HyperVolume HyperCuboid::split(int dimension, double fractionalSplitPoint) const{
 
-  return HyperCuboidSet(
+  return HyperVolume(
              splitBelow(dimension,fractionalSplitPoint), 
              splitAbove(dimension,fractionalSplitPoint)
              );
@@ -594,7 +594,7 @@ HyperCuboidSet HyperCuboid::split(int dimension, double fractionalSplitPoint) co
 ///split the cuboid into two along the dimension given and 
 ///append the resulting HyperCuboids to the HyperCuboidSet given. The fractional split 
 ///point [0,1] decides where (in that dimesnion) the split is
-void HyperCuboid::split(int dimension, double fractionalSplitPoint, HyperCuboidSet& set) const{
+void HyperCuboid::split(int dimension, double fractionalSplitPoint, HyperVolume& set) const{
 
   set.push_back( splitBelow(dimension,fractionalSplitPoint) );
   set.push_back( splitAbove(dimension,fractionalSplitPoint) );
