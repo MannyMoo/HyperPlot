@@ -49,6 +49,8 @@ class AlgOption{
     USE_WEIGHTS,                /**< Use weights for calculating the bin contents */
     USE_SHADOW_DATA,            /**< Use a show datatset */
     DRAW_ALGORITHM,             /**< Draw the binning at each iteration of the algorithm */
+    SNAP_TO_GRID,               /**< Ensure all bin edges are on a grid */
+    GRID_MULTIPLIER,            /**< Set the grid multiplier  */
     AXIS_NAMES,                 /**< The axis names (that are provided by a HyperName) */
     FUNC                        /**< Pass a HyperFunction to the binning alg */
   };
@@ -85,6 +87,9 @@ class AlgOption{
   static AlgOption DrawAlgorithm      (TString path);
   static AlgOption AxisTitles         (HyperName name);
   static AlgOption UseFunction        (HyperFunction* func);
+  static AlgOption GridMultiplier     (int val);
+  static AlgOption GridMultiplier     (HyperPoint val);
+  static AlgOption SnapToGrid         (bool val);
 
 
   bool isEmpty();

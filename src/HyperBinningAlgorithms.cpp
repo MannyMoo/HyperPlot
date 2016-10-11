@@ -134,6 +134,29 @@ AlgOption AlgOption::UseFunction          (HyperFunction* func){
 }
 
 
+AlgOption AlgOption::GridMultiplier     (int val){
+  AlgOption algOption;
+  algOption._optionName = GRID_MULTIPLIER;
+  algOption._int = val;
+  return algOption;   
+}
+
+AlgOption AlgOption::GridMultiplier     (HyperPoint val){
+  AlgOption algOption;
+  algOption._optionName = GRID_MULTIPLIER;
+  algOption._hyperPoint = val;
+  return algOption;   
+}
+
+AlgOption AlgOption::SnapToGrid         (bool val){
+  AlgOption algOption;
+  algOption._optionName = SNAP_TO_GRID;
+  algOption._bool = val;
+  return algOption;     
+}
+
+
+
 ///Get the AlgOption::OptionName 
 ///
 AlgOption::OptionName  AlgOption::getOptionName            (){
@@ -327,9 +350,25 @@ HyperBinningMaker* HyperBinningAlgorithms::getHyperBinningMaker(HyperCuboid binn
   if (optExist(AlgOption::DRAW_ALGORITHM )) 
     binnningMaker->drawAfterEachIteration( getOpt(AlgOption::DRAW_ALGORITHM).getStringOpt() );
 
- if (optExist(AlgOption::AXIS_NAMES )) 
+  if (optExist(AlgOption::AXIS_NAMES )) 
     binnningMaker->setNames( getOpt(AlgOption::AXIS_NAMES).getHyperNameOpt() );
+  
+  if (optExist(AlgOption::SNAP_TO_GRID )){
+    binnningMaker->useSnapToGrid( getOpt(AlgOption::SNAP_TO_GRID).getBoolOpt() );
+  }
 
+  if (optExist(AlgOption::GRID_MULTIPLIER )){
+
+    HyperPoint valA = getOpt(AlgOption::GRID_MULTIPLIER).getHyperPointOpt();    
+    int        valB = getOpt(AlgOption::GRID_MULTIPLIER).getIntOpt       ();
+
+    if (valA.getDimension() != 0){
+      binnningMaker->setGridMultiplier(valA);
+    }
+    else{
+      binnningMaker->setGridMultiplier(valB);
+    }
+  }
   
   return binnningMaker;
 

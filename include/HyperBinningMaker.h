@@ -123,6 +123,12 @@ class HyperBinningMaker {
   HyperFunction* _func;
   /**< Some binning algorithms are based on a function rather than a dataset*/
 
+  bool _snapToGrid;
+  /**< if this is true, any split point needs to be located on a grid */
+
+  HyperPoint _gridMultiplier;
+  /**< if the  */
+  
 
   public:
     
@@ -149,6 +155,11 @@ class HyperBinningMaker {
   void addShadowHyperPointSet(const HyperPointSet& data);
 
   void setSeed(int seed);
+
+  void useSnapToGrid(bool val);
+  void setGridMultiplier(HyperPoint& multipliers);
+  void setGridMultiplier(double multiplier);
+
 
   void useEventWeights(bool val = true){_useEventWeights = val;}
   /**< select if weighted event should be used - by default this is off */
@@ -201,7 +212,8 @@ class HyperBinningMaker {
 
   void setDimSpecStatusFromMinBinWidths (int volumeNumber);
   void updateGlobalStatusFromDimSpecific(int volumeNumber);
-
+  
+  bool snapToGrid(const HyperCuboid& cuboid, int dimension, double& splitCoord) const;
   
   /* ----------------------------------------------------------------*/
   

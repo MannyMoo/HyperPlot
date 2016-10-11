@@ -9,7 +9,9 @@ HyperBinningMaker::HyperBinningMaker() :
   _drawAlgorithm          (false),  
   _iterationNum           (0    ),
   _names( 0 ),
-  _func( 0 )
+  _func( 0 ),
+  _snapToGrid(false),  
+  _gridMultiplier( 0 )
 {
 
 }
@@ -33,7 +35,10 @@ HyperBinningMaker::HyperBinningMaker(const HyperCuboid& binningRange, const Hype
   _drawAlgorithm          (false),
   _iterationNum           (0    ),
   _names( binningRange.getDimension() ),
-  _func (0)
+  _func (0),
+  _snapToGrid(false),
+  _gridMultiplier( HyperPoint(binningRange.getDimension(), 1) )
+
 {  
   for (int i = 0; i < binningRange.getDimension(); i++) _binningDimensions.push_back(i);
   WELCOME_LOG << "Good day from the HyperBinningMaker() Constructor"<<std::endl;
@@ -63,9 +68,14 @@ HyperCuboid HyperBinningMaker::splitAbovePoint(int dim, double splitPoint, const
   HyperPoint lowCorner   ( original.getLowCorner () );
   HyperPoint highCorner  ( original.getHighCorner() );
 
-  HyperPoint newLowCorner( lowCorner );
-  newLowCorner.at(dim) = lowCorner.at(dim) + (highCorner.at(dim) - lowCorner.at(dim))*splitPoint;
+  double splitCoord = lowCorner.at(dim) + (highCorner.at(dim) - lowCorner.at(dim))*splitPoint;
+  if ( _snapToGrid == true ) {
+    snapToGrid(original, dim, splitCoord);
+  }
 
+  HyperPoint newLowCorner( lowCorner );
+  newLowCorner.at(dim) = splitCoord;
+  
   HyperCuboid temp(newLowCorner, highCorner);
   return temp;
 
@@ -83,8 +93,13 @@ HyperCuboid HyperBinningMaker::splitBelowPoint(int dim, double splitPoint, const
   HyperPoint lowCorner   ( original.getLowCorner () );
   HyperPoint highCorner  ( original.getHighCorner() );
 
+  double splitCoord = lowCorner.at(dim) + (highCorner.at(dim) - lowCorner.at(dim))*splitPoint;
+  if ( _snapToGrid == true ) {
+    snapToGrid(original, dim, splitCoord);
+  }
+
   HyperPoint newHighCorner( highCorner );
-  newHighCorner.at(dim) = lowCorner.at(dim) + (highCorner.at(dim) - lowCorner.at(dim))*splitPoint;
+  newHighCorner.at(dim) = splitCoord;
 
   HyperCuboid temp(lowCorner, newHighCorner);
   return temp;
@@ -115,6 +130,27 @@ void HyperBinningMaker::setSeed(int seed){
   delete _random;
   _random = new TRandom3(seed);
 
+}
+
+///Do you want to use the snap to grid feature i.e. force all the bin egdes 
+///to lie on a well defined grid. Grid is has N bins in each direction between
+///min and max (from the binning limits given)
+///where N = floor( (max - min) / minBinWidth) * gridMultiplier
+void HyperBinningMaker::useSnapToGrid(bool val){
+  _snapToGrid = val;
+}
+
+///Set the grid mulipliers independently for each dimension. See 'useSnapToGrid'
+///function for description
+void HyperBinningMaker::setGridMultiplier(HyperPoint& multipliers){
+  _gridMultiplier = multipliers;
+}
+
+///Set the grid muliplier to be the same in each dimesnion. See 'useSnapToGrid'
+///function for description
+void HyperBinningMaker::setGridMultiplier(double multiplier){
+  HyperPoint point( _hyperCuboids.at(0).getDimension(), multiplier );
+  setGridMultiplier( point );
 }
 
 ///Get the sum of weights in a HyperPointSet. If _useEventWeights isn't true,
@@ -388,6 +424,66 @@ int HyperBinningMaker::split(int volumeNumber, int dimension, double splitPoint)
   //}
 
 }
+
+/// Sometimes it's nice to have all the bin edges along some kind of grid structure.
+/// My hope is that this also allows better compression of the binning scheme.
+bool HyperBinningMaker::snapToGrid(const HyperCuboid& cuboid, int dimension, double& splitCoord) const{
+  
+  double absMax = _hyperCuboids.at(0).getHighCorner ().at(dimension);
+  double absMin = _hyperCuboids.at(0).getLowCorner  ().at(dimension);
+  
+  double minEdgeLength = _minimumEdgeLength.at(dimension);
+  
+  int gridMultiplier = floor( _gridMultiplier.at(dimension) );
+  int nbins = floor((absMax - absMin)/minEdgeLength)*gridMultiplier;
+
+  double gridWidth = (absMax - absMin)/double(nbins);
+  
+  
+  int binNumLow  = floor( (splitCoord - absMin)/gridWidth );
+  int binNumHigh = ceil ( (splitCoord - absMin)/gridWidth );
+
+  double lowCoord  = absMin + double(binNumLow )*gridWidth;
+  double highCoord = absMin + double(binNumHigh)*gridWidth;
+  
+
+  double closestGridPoint  = 0.0;
+  double furthestGridPoint = 0.0;
+
+
+  if ( fabs(lowCoord - splitCoord) <= fabs(highCoord - splitCoord) ){
+    closestGridPoint  = lowCoord ;
+    furthestGridPoint = highCoord;
+  }
+  else{
+    closestGridPoint  = highCoord;
+    furthestGridPoint = lowCoord ;    
+  }
+
+  double min = cuboid.getLowCorner ().at(dimension);
+  double max = cuboid.getHighCorner().at(dimension);
+  
+  //std::cout << min << "    " << lowCoord << "   " << splitCoord << "    " << highCoord << "    " << max << std::endl;
+
+
+  if ( closestGridPoint - min >= minEdgeLength && max - closestGridPoint >= minEdgeLength ){
+    splitCoord = closestGridPoint;
+    return true;
+  }
+  if ( furthestGridPoint - min >= minEdgeLength && max - furthestGridPoint >= minEdgeLength ){
+    splitCoord = furthestGridPoint;
+    return true;    
+  }   
+  
+  VERBOSE_LOG << "I failed to snap to grid - very sad" << std::endl;
+
+  splitCoord = closestGridPoint;
+  return false;
+
+}
+
+
+
 
 /// If a HyperFunction is passed through the setHyperFunction function,
 /// this function is called, and must return true for any successful bin split.
