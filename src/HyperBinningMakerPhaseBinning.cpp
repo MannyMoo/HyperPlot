@@ -6,7 +6,9 @@ HyperBinningMakerPhaseBinning::HyperBinningMakerPhaseBinning(const HyperCuboid& 
   HyperBinningMaker(binningRange, HyperPointSet( binningRange.getDimension() )),
   _maximumRandWalks(30),
   _numWalkers      (5),
-  _walkSizeFrac(0.12)
+  _walkSizeFrac(0.12),
+  _numberOfCornerSplits(0),
+  _numberOfPhaseSplits(0)
 {
   setHyperFunction(func);
   WELCOME_LOG << "Good day from the HyperBinningMakerPhaseBinning() Constructor"<<std::endl; 
@@ -67,7 +69,7 @@ int HyperBinningMakerPhaseBinning::functionSplitAll(int dimension){
       if (getDimensionSpecificVolumeStatus(i, dimension) == VolumeStatus::CONTINUE ){
         
         
-        loadingbar.update(splittableDone);
+        //loadingbar.update(splittableDone);
         splittableDone++;
 
         int split = functionSplit( i, dimension );
@@ -297,8 +299,9 @@ double HyperBinningMakerPhaseBinning::getSecondDerivative(HyperPoint& point, Hyp
 
 int HyperBinningMakerPhaseBinning::cornerSplit(int volumeNumber, int dimension, double valAtCenter, HyperPoint gradient){
   
+  _numberOfCornerSplits++;
 
-
+  VERBOSE_LOG << "cornerSplit(" << volumeNumber << ", " << dimension << ", " << valAtCenter << ",  gradient )" << std::endl;
 
 
   int dimensions     = _hyperCuboids.at(0).getDimension();
@@ -314,6 +317,8 @@ int HyperBinningMakerPhaseBinning::cornerSplit(int volumeNumber, int dimension, 
   
   //Project the cuboid into the splitting dimensions
   HyperCuboid projectedCuboid = chosenHyperCuboid.project(_binningDimensions);
+  
+  VERBOSE_LOG << "Geting vector of all my verticies" << std::endl;
 
   //Get the verticies of the projected cuboid
   HyperPointSet projectedVerticies = projectedCuboid.getVertices();
@@ -344,7 +349,7 @@ int HyperBinningMakerPhaseBinning::cornerSplit(int volumeNumber, int dimension, 
       if ( vertVal > pointVal ) {addOrSubtract = -1.0;}
       else                      {addOrSubtract = +1.0;}
       
-      if (dimension != thisDim) {addOrSubtract *= 0.5;}
+      //if (dimension != thisDim) {addOrSubtract *= 0.5;}
 
       vertex.at( thisDim ) += addOrSubtract*_minimumEdgeLength.at( thisDim );
     }
@@ -364,6 +369,9 @@ int HyperBinningMakerPhaseBinning::cornerSplit(int volumeNumber, int dimension, 
   
   double lowBoundary  = getLowBinBoundary (bin);
   double highBoundary = getHighBinBoundary(bin);
+  
+  VERBOSE_LOG << "Sorting verticies to speed my life up" << std::endl;
+
 
   for (unsigned i = 0; i < verticies.size(); i++){
 
@@ -426,9 +434,9 @@ int HyperBinningMakerPhaseBinning::cornerSplit(int volumeNumber, int dimension, 
     int binHere    = getBinNumFromFuncVal(valHere);
     
     std::complex<double> cEst(cos(estimate), sin(estimate));
-    std::complex<double> cVal(cos(valHere) , sin(valHere ));
+    std::complex<double> cValHere(cos(valHere) , sin(valHere ));
     
-    double diff = arg( cEst*conj(cVal) );
+    double diff = arg( cEst*conj(cValHere) );
     
     uncertaintySum += fabs(diff);
     uncertainiesAdded++;
@@ -436,8 +444,24 @@ int HyperBinningMakerPhaseBinning::cornerSplit(int volumeNumber, int dimension, 
     //std::cout << i << "   "<< estimate << " : [ " << lowBoundary << ", " << highBoundary <<  "] "<< valHere << std::endl;
 
     if (binHere != bin){
+  
+      std::complex<double> cVal(cos(val) , sin(val ));
+      double dy = arg( cVal*conj(cValHere) );
+      
+      double binEdge = 0.0;
+      if (dy > 0.0){
+        binEdge = getLowBinBoundary(bin);
+      }
+      else{
+        binEdge = getHighBinBoundary(bin);
+      }
 
-      HyperPoint splitPoint = verticies.at(vtxNum) + (point - verticies.at(vtxNum))*0.5;
+      double scale = fabs( (binEdge - val)/dy );
+      if (scale > 1.0){
+        ERROR_LOG << "THIS HAS TO BE LESS THAN 1.0" << std::endl;
+      }
+
+      HyperPoint splitPoint = point + ( verticies.at(vtxNum) - point )*scale;
       return splitByCoord(volumeNumber, dimension, splitPoint );
     }
 
@@ -451,6 +475,8 @@ int HyperBinningMakerPhaseBinning::cornerSplit(int volumeNumber, int dimension, 
 
 int HyperBinningMakerPhaseBinning::functionSplit(int volumeNumber, int dimension){
   
+  _numberOfPhaseSplits++;
+
   VERBOSE_LOG <<"Calling functionSplit(" << volumeNumber << ", " << dimension << ")" << std::endl;
 
   //first get the Hypercube that we want to split
@@ -463,14 +489,15 @@ int HyperBinningMakerPhaseBinning::functionSplit(int volumeNumber, int dimension
   HyperPoint     lowPoint          = chosenHyperCuboid.getLowCorner ();
   HyperPoint     highPoint         = chosenHyperCuboid.getHighCorner();
   
-  lowPoint  = lowPoint  + _minimumEdgeLength*0.5;
-  highPoint = highPoint - _minimumEdgeLength*0.5;
+  lowPoint  = lowPoint  + _minimumEdgeLength*0.499;
+  highPoint = highPoint - _minimumEdgeLength*0.499;
 
   lowPoint .at(dimension) += _minimumEdgeLength.at(dimension)*0.5;
   highPoint.at(dimension) -= _minimumEdgeLength.at(dimension)*0.5;
   
   HyperCuboid splitLimits(lowPoint, highPoint);
   HyperPoint  splitLimitsWidth = highPoint - lowPoint;
+  VERBOSE_LOG << "I have a nice set of split limits" << std::endl;
 
   //Get the center of the bin. Ideally we want
   //to find a split point as colse as possible to this
@@ -782,5 +809,10 @@ bool HyperBinningMakerPhaseBinning::passFunctionCriteria(HyperCuboid& cuboid1, H
 
 
 HyperBinningMakerPhaseBinning::~HyperBinningMakerPhaseBinning(){
+  
+  INFO_LOG << "Number of phase  splits: " << _numberOfPhaseSplits << std::endl;
+  INFO_LOG << "Number of corner splits: " <<_numberOfCornerSplits << std::endl;
+
+
   GOODBYE_LOG << "Goodbye from the HyperBinningMakerPhaseBinning() Constructor" <<std::endl; 
 }

@@ -33,6 +33,9 @@ class HyperBinningMakerPhaseBinning : public HyperBinningMaker{
   int    _maximumRandWalks;
   int    _numWalkers;
   double     _walkSizeFrac;
+  
+  int _numberOfCornerSplits;
+  int _numberOfPhaseSplits;
 
   public:
   
