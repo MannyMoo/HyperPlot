@@ -7,5 +7,7 @@ example/.*
 example/src/*.o
 example/src/TestBinning
 *sublime*
+*.root
+*.json
 
 
