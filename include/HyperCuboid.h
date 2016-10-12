@@ -22,6 +22,7 @@ class HyperCuboid;
 // Root includes
 
 // std includes
+#include <bitset>
 
 
 class HyperCuboid {
@@ -75,6 +76,9 @@ class HyperCuboid {
   HyperPointSet getConnectedVerticies(const HyperPoint& point) const;
   HyperPointSet getVertices() const;
   
+  HyperPointSet getEdgeCenters() const;
+
+
   HyperCuboid project        (std::vector<int> dims) const;
   HyperCuboid projectOpposite(std::vector<int> dims) const;
   bool        inVolume(const HyperPoint& coords, std::vector<int> dims) const;
@@ -88,17 +92,14 @@ class HyperCuboid {
   HyperPoint& getHighCorner() { return _highCorner; }
   /**< return the high HyperPoint corner */
   
+
   HyperCuboid splitAbove(int dimension, double fractionalSplitPoint) const;
-
-
   HyperCuboid splitBelow(int dimension, double fractionalSplitPoint) const;
-
-
   HyperVolume split(int dimension, double fractionalSplitPoint) const;
-
-
   void split(int dimension, double fractionalSplitPoint, HyperVolume& set) const;
 
+  HyperPoint getWidth() const;
+  double getWidth(int dim) const;
 
   bool setCorners(const HyperPoint& lowCorner, const HyperPoint& highCorner);
 

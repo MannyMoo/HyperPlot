@@ -398,30 +398,102 @@ HyperPoint HyperCuboid::getNegativeIntersectionPoint(const HyperLine& line) cons
 
 }
 
+HyperPointSet HyperCuboid::getEdgeCenters() const{
+
+  int ndim = getDimension();
+
+  std::bitset< 15 > binary( 0 );
+
+  HyperPoint center = getCenter();
+  HyperPoint vectorToHighCorner = _highCorner - center;
+
+  int nVertices = pow(2, ndim);
+  
+  HyperPointSet verticies(ndim);
+  
+  for (int dimToIgnore = 0; dimToIgnore < ndim; dimToIgnore++){
+
+    for (int i = 0; i < nVertices; i++){
+      HyperPoint vectorToVertex(vectorToHighCorner);
+      binary = i;
+      for (int dim = 0; dim < ndim; dim++){
+        if (binary[dim] == 0){
+          vectorToVertex.at(dim) = -vectorToVertex.at(dim);
+        }
+        if (dimToIgnore == dim){
+          vectorToVertex.at(dim) = 0.0;
+        }        
+      }
+      verticies.push_back(vectorToVertex + center);
+    }  
+  }
+  
+  verticies.sort();
+  verticies.removeDuplicates();
+
+  return verticies;
+
+}
+
+
+
+
 ///Get all verticies of the HyperCuboid with no repeats.
 ///
 ///This is done by starting from one corner and following
 ///the edges to the other corners. This has to be done nDim
 ///times in order to get all the corners.
 HyperPointSet HyperCuboid::getVertices() const{
-
-
-  HyperPointSet hyperPointSet(getDimension());
-  hyperPointSet.push_back(_lowCorner);
   
-  HyperPointSet previousHyperPointSet = hyperPointSet;
+  //New faster method. We know the number of verticies, so just
+  //loop from 0 -> nVertex-1 and convert this number to binary.
+  //Imagine the binary number is a vector V. 
+  //Also have the center of the cube, C, and a vector to the top right
+  //corner T.
+  //
+  //
 
-  for(int i = 1; i < getDimension(); i++){
-    previousHyperPointSet = getConnectedVerticies(previousHyperPointSet);
-    hyperPointSet.addHyperPointSet(previousHyperPointSet);
-    hyperPointSet.sort();
-    hyperPointSet.removeDuplicates();
+  int ndim = getDimension();
+
+  std::bitset< 15 > binary( 0 );
+
+  HyperPoint center = getCenter();
+  HyperPoint vectorToHighCorner = _highCorner - center;
+
+  int nVertices = pow(2, ndim);
+  
+  HyperPointSet verticies(ndim);
+
+  for (int i = 0; i < nVertices; i++){
+    HyperPoint vectorToVertex(vectorToHighCorner);
+    binary = i;
+    for (int dim = 0; dim < ndim; dim++){
+      if (binary[dim] == 0){
+        vectorToVertex.at(dim) = -vectorToVertex.at(dim);
+      }
+    }
+    verticies.push_back(vectorToVertex + center);
   }
   
-  hyperPointSet.push_back(_highCorner);
+  return verticies;
+
+  //OLD method
+  //HyperPointSet hyperPointSet(getDimension());
+  //hyperPointSet.push_back(_lowCorner);
+  //
+  //HyperPointSet previousHyperPointSet = hyperPointSet;
+
+  //for(int i = 1; i < getDimension(); i++){
+  //  previousHyperPointSet = getConnectedVerticies(previousHyperPointSet);
+  //  hyperPointSet.addHyperPointSet(previousHyperPointSet);
+  //  hyperPointSet.sort();
+  //  hyperPointSet.removeDuplicates();
+  //}
+  //
+  //hyperPointSet.push_back(_highCorner);
 
 
-  return hyperPointSet;
+  //return hyperPointSet;
 
 }
 
@@ -490,7 +562,7 @@ bool HyperCuboid::setCorners(const HyperPoint& lowCorner, const HyperPoint& high
 ///
 bool HyperCuboid::inVolume(const HyperPoint& coords) const{
 
-  if (_lowCorner.allLTOE(coords) &&  _highCorner.allGTOE(coords)) return 1;
+  if (_lowCorner.allLT(coords) &&  _highCorner.allGTOE(coords)) return 1;
   return 0;
 
 }
@@ -504,7 +576,7 @@ bool HyperCuboid::inVolume(const HyperPoint& coords, std::vector<int> dims) cons
     double minEdge = getLowCorner ().at(dim);
     double maxEdge = getHighCorner().at(dim);
     double val     = coords.at(dim);
-    if ( ( minEdge <= val && val <= maxEdge ) == false ) return false;
+    if ( ( minEdge < val && val <= maxEdge ) == false ) return false;
   }
 
   return true;
@@ -518,6 +590,19 @@ double HyperCuboid::volume() const{
   return (_highCorner - _lowCorner).multiplyElements();
 
 }
+
+///Find width of the HyperCuboid as a HyperPoint
+///
+HyperPoint HyperCuboid::getWidth() const{
+  return _highCorner - _lowCorner;  
+}
+
+///Find the width of the HyperCuboid in a given dimension
+///
+double HyperCuboid::getWidth(int dim) const{
+  return _highCorner.at(dim) - _lowCorner.at(dim);
+}
+
 
 ///split the cuboid into two along the dimension given and 
 ///return the resulting HyperCuboid. The fractional split 
