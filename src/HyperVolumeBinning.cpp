@@ -7,7 +7,7 @@ HyperVolumeBinning::HyperVolumeBinning(int dimension) :
   _changed(true),
   _averageBinWidth(dimension, 1.0),
   _minmax( HyperPoint(dimension, 0.0), HyperPoint(dimension, 1.0) ),
-  _names(dimension, "")
+  _names(dimension)
 {
   WELCOME_LOG << "Hello from the HyperVolumeBinning() Constructor";
 }
