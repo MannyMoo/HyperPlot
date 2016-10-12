@@ -643,7 +643,7 @@ void HyperVolumeBinning::save(TString filename) const{
 
   save();
 
-  file->Write();
+  //file->Write();
   file->Close();
 
 }
@@ -678,7 +678,7 @@ void HyperVolumeBinning::save() const{
     saveHyperVolumeToTree(tree, lowCorner, highCorner, _hyperVolumes.at(bin));
   }
   
-  tree->Write();
+  //tree->Write();
   
   delete lowCorner;
   delete highCorner;
@@ -705,10 +705,10 @@ void HyperVolumeBinning::savePrimaryVolumeNumbers() const{
   //Loop over each Primary Volume
   for(unsigned int i = 0; i < _primaryVolumeNumbers.size(); i++ ){
     volumeNumber = _primaryVolumeNumbers.at(i);
-    tree->Write();
+    tree->Fill();
   }
   
-  tree->Write();
+  //tree->Write();
   
 }
 
