@@ -161,7 +161,7 @@ double StatisticsFinder::expX4() const{
 /**
   calculate and return the second central moment
 
-  E[X^2] - E[X]^2
+  E[(X - E(X))^2] = E[X^2] - E[X]^2
 */
 double StatisticsFinder::secondCentralMom() const{
   return expX2() - expX()*expX();
@@ -170,7 +170,7 @@ double StatisticsFinder::secondCentralMom() const{
 /**
   calculate and return the second central moment
 
-  E[X^4] - 4E[X]E[X^3] + 6E[X]^2 E[X^2] - 3 E[X]^4
+  E[(X - E(X))^4] = E[X^4] - 4E[X]E[X^3] + 6E[X]^2 E[X^2] - 3 E[X]^4
 */
 double StatisticsFinder::fourthCentralMom() const{
   return expX4() - 4.0*expX()*expX3() + 6.0*expX()*expX()*expX2() - 3.0*expX()*expX()*expX()*expX();
