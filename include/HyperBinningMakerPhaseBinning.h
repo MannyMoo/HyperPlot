@@ -57,13 +57,22 @@ class HyperBinningMakerPhaseBinning : public HyperBinningMaker{
 
   double getSecondDerivative(HyperPoint& point, HyperPoint& vector, double funcValAtPoint, double& deriv);
 
+  int splitDimFromGrad(int volumeNumber, HyperPoint gradient);
+
 
   virtual bool passFunctionCriteria(HyperCuboid& cuboid1, HyperCuboid& cuboid2);
   virtual int functionSplitAll(int dimension);
 
-  virtual int functionSplit(int binNumber   , int dimension);
+  virtual int functionSplit(int binNumber   , int& dimension);
   int functionSplitRandom  (int volumeNumber, int dimension);
-  int cornerSplit          (int volumeNumber, int dimension, double valAtCenter, HyperPoint gradient);
+  
+
+  HyperPointSet getSplitCorners( int volumeNumber );
+  HyperPointSet getSplitFaces  ( int volumeNumber );
+  HyperPointSet getSplitEdges  ( int volumeNumber );
+
+  HyperPoint orderAndTestSplitPoints(HyperPointSet& points, HyperPoint& point, double valAtPoint, HyperPoint gradient);
+  int systematicSplit      (int volumeNumber, int dimension, double valAtCenter, HyperPoint gradient);
 
 
   int getBinNumFromFuncVal(double phase);
