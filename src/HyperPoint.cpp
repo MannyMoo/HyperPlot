@@ -438,6 +438,11 @@ void HyperPoint::print(std::ostream& os, int endline) const{
   if (endline) os << std::endl;
 }
 
+std::ostream& operator<<(std::ostream& os, const HyperPoint& point) {
+  point.print(os, 0);
+  return os;
+} 
+
 ///Destructor
 ///
 HyperPoint::~HyperPoint(){

@@ -98,6 +98,9 @@ class HyperPoint : public Weights {
   
   bool compatible(const HyperPoint& other, bool printError = true) const;
 
+  friend std::ostream& operator<<(std::ostream& os, const HyperPoint& point);
+
+
   ~HyperPoint();
 
 };
