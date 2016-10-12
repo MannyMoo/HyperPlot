@@ -311,6 +311,10 @@ void HyperBinningHistogram::project(TH1D* histogram, const HyperVolume& hyperVol
 */
 HyperBinningHistogram HyperBinningHistogram::slice(std::vector<int> sliceDims, std::vector<double> sliceVals) const{
   
+  //for (unsigned i = 0; i < sliceDims.size(); i++){
+  //  std::cout << sliceDims.at(i) << "  " << sliceVals.at(i) << std::endl;
+  //}
+
   int nStartingDims = _binning.getDimension();
   int nSliceDims    = sliceDims.size();
   int nEndDims      = nStartingDims - nSliceDims;
@@ -322,6 +326,8 @@ HyperBinningHistogram HyperBinningHistogram::slice(std::vector<int> sliceDims, s
 
   std::vector<double> binContents;
   std::vector<double> binErrors  ;
+  
+  //std::cout << "Looping over bins" << std::endl;
 
   for (int i = 0; i < getNBins(); i++){
     
@@ -342,6 +348,8 @@ HyperBinningHistogram HyperBinningHistogram::slice(std::vector<int> sliceDims, s
     binContents.push_back( getBinContent(i) );
     binErrors  .push_back( getBinError  (i) );
   }  
+  
+  //std::cout << "Now setting bin contents" << std::endl;
 
   HyperBinningHistogram slicedHist(temp);
 
@@ -350,6 +358,8 @@ HyperBinningHistogram HyperBinningHistogram::slice(std::vector<int> sliceDims, s
     slicedHist.setBinError  (i, binErrors  .at(i) );
   }
   
+  //std::cout << "Now dealing with the HyperNames" << std::endl;
+
   HyperName names(nEndDims);
   int count = 0;
 
@@ -360,10 +370,16 @@ HyperBinningHistogram HyperBinningHistogram::slice(std::vector<int> sliceDims, s
       if (i == dim) doesExist = true;
     }
 
-    if (doesExist == false) { names.at(count) = _binning.getNames().at(i); count++;}
+    if (doesExist == false) { 
+      //std::cout << "names.at(" << count << ") = _binning.getNames().at(" << i << ")" << std::endl;
+      names.at(count) = _binning.getNames().at(i); count++; 
+    }
   }  
 
   slicedHist.setNames(names);
+
+  //std::cout << "Done" << std::endl;
+
 
   return slicedHist;
 
@@ -380,6 +396,90 @@ HyperBinningHistogram HyperBinningHistogram::slice(int dim, double val) const{
   sliceVals.push_back(val);
 
   return slice(sliceDims, sliceVals);
+
+}
+
+
+void HyperBinningHistogram::draw2DSlice(TString path, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint) const{
+  
+  //std::cout << "draw2DSlice(" << path << ", " << sliceDimX << ", " << sliceDimY << ", " << slicePoint << ")" << std::endl;
+
+  std::vector<int   > _sliceDims;
+  std::vector<double> _sliceVals;
+
+  for (int i = 0; i < slicePoint.getDimension(); i++){
+    if (i == sliceDimX) continue;
+    if (i == sliceDimY) continue;
+    _sliceDims.push_back( i                );
+    _sliceVals.push_back( slicePoint.at(i) );
+  }
+
+  HyperBinningHistogram sliceHist = slice( _sliceDims, _sliceVals );
+  sliceHist.draw(path);
+
+}
+
+void HyperBinningHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int sliceSetDim, int nSlices, const HyperPoint& slicePoint) const{
+
+  HyperPoint slicePointCp(slicePoint);
+
+  double min = getBinning().getMin(sliceSetDim);
+  double max = getBinning().getMax(sliceSetDim);
+  double width = (max - min)/double(nSlices);
+  
+  for (int i = 0; i < nSlices; i++){
+    double val = min + width*(i + 0.5);
+    slicePointCp.at(sliceSetDim) = val;
+    
+    TString uniquePath = path;
+    uniquePath += "_sliceNum";
+    uniquePath +=  i;
+    draw2DSlice(uniquePath, sliceDimX, sliceDimY, slicePointCp);
+
+  }
+  
+
+}
+
+void HyperBinningHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint) const{
+  
+
+  
+  for (int i = 0; i < slicePoint.getDimension(); i++){
+
+    if (i == sliceDimX) continue;
+    if (i == sliceDimY) continue;
+    
+    TString thsPath = path;
+    thsPath += "_scanDim";
+    thsPath += i;
+
+    draw2DSliceSet(thsPath, sliceDimX, sliceDimY, i, nSlices, slicePoint);
+
+  }
+  
+
+}
+
+void HyperBinningHistogram::draw2DSliceSet(TString path, int nSlices, const HyperPoint& slicePoint) const{
+  
+
+  
+  for (int i = 0; i < slicePoint.getDimension(); i++){
+    for (int j = 0; j < slicePoint.getDimension(); j++){
+      
+      if (i >= j) continue;
+
+      TString thsPath = path;
+      thsPath += "_";
+      thsPath += i;
+      thsPath += "vs";
+      thsPath += j;
+
+      draw2DSliceSet(thsPath, i, j, nSlices, slicePoint);
+    }
+  }
+  
 
 }
 

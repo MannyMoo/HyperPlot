@@ -87,18 +87,28 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
 
   virtual void merge( const HistogramBase& other );
   
+  //Project the HyperBinningHistograms down into one dimension
+
   void project(TH1D* histogram, const HyperCuboid& cuboid, double content, int dimension) const;
   void project(TH1D* histogram, const HyperVolume& hyperVolume, double content, int dimension) const;
   TH1D project(int dim = 0, int bins = 100, TString name = "projection") const;
   
-  HyperBinningHistogram slice(std::vector<int> sliceDims, std::vector<double> sliceVals) const;
-  HyperBinningHistogram slice(int dim, double val) const;
-
-  void drawProjection(TString path, int dim = 0, int bins = 100) const;
+  void drawProjection    (TString path, int dim = 0, int bins = 100) const;
   void drawAllProjections(TString path, int bins) const;
 
   void compareProjection    (TString path, int dim, const HyperBinningHistogram& other, int bins = 100) const;
   void compareAllProjections(TString path, const HyperBinningHistogram& other, int bins = 100) const;
+
+  
+
+  HyperBinningHistogram slice(std::vector<int> sliceDims, std::vector<double> sliceVals) const;
+  HyperBinningHistogram slice(int dim, double val) const;
+  void draw2DSlice   (TString path, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint) const;
+  void draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int sliceSetDim, int nSlices, const HyperPoint& slicePoint) const;
+  void draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint) const;
+  void draw2DSliceSet(TString path, int nSlices, const HyperPoint& slicePoint) const;
+
+
 
   const HyperVolumeBinning& getBinning() const { return _binning; }  /**< get the HyperVolumeBinning */
   
