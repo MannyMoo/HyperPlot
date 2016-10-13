@@ -164,15 +164,29 @@ HyperPoint HyperCuboid::getOppositePoint(const HyperPoint& point) const{
 
 ///Get a random point in the HyperCuboid (uses gRandom)
 ///
-HyperPoint HyperCuboid::getRandomPoint() const{
+HyperPoint HyperCuboid::getRandomPoint(TRandom* random) const{
   
   HyperPoint point(getDimension());
   for (int i = 0; i < getDimension(); i++){
-    point.at(i) = gRandom->Uniform(getLowCorner().at(i), getHighCorner().at(i));
+    point.at(i) = random->Uniform(getLowCorner().at(i), getHighCorner().at(i));
   }
   return point;
 
 }
+
+///Get a random point in the HyperCuboid (uses gRandom)
+///
+HyperPointSet HyperCuboid::getRandomPoints(int nPoints, TRandom* random) const{
+  
+  HyperPointSet points(getDimension());
+  for (int i = 0; i < nPoints; i++){
+    points.push_back( getRandomPoint(random) );
+  }
+  return points;
+  
+}
+
+
 
 ///Give it a corner of the HyperCuboid and it will return all faces (HyperPlanes) connected 
 ///to that corner. Note that nDim points are needed to define such a HyperPlane. 

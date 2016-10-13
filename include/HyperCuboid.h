@@ -65,7 +65,8 @@ class HyperCuboid {
   HyperPoint getNegativeIntersectionPoint(const HyperLine& line) const;
 
   //pick a random point from within the hypercuboid
-  HyperPoint getRandomPoint() const;
+  HyperPoint getRandomPoint(TRandom* random = gRandom) const;
+  HyperPointSet getRandomPoints(int nPoints = 100, TRandom* random = gRandom) const;
 
   std::vector<HyperPlane> getConnectedHyperPlanes(const HyperPoint& point) const;
   std::vector<HyperPlane> getConnectedHyperPlanes(const HyperPointSet& point) const;
