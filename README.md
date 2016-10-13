@@ -9,8 +9,11 @@ Doxygen Doxyfile
 
 An example can be found in the example directory. Go to this directory and type:
 
-Make -j8
-./src/TestBinning
+make -j8
+
+./src/TestBinning --help
+
+This will show a list of features you can test out.
 
 
 
