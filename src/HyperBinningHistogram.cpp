@@ -60,6 +60,7 @@ HyperBinningHistogram::HyperBinningHistogram(
   AlgOption opt9 
 ) :
   HistogramBase(0),
+  HyperFunction(binningRange),
   _binning( HyperVolumeBinning(binningRange.getDimension()) )
 {
 
@@ -93,6 +94,8 @@ HyperBinningHistogram::HyperBinningHistogram(TString filename, int dim) :
 {
   WELCOME_LOG << "Good day from the HyperBinningHistogram() Constructor";
   load(filename);
+
+  setFuncLimits( getLimits() );
 }
 
 /**
@@ -147,6 +150,15 @@ void HyperBinningHistogram::fill(const HyperPointSet& points){
   }
 
 }
+
+
+/**
+Get the limits of the histogram
+*/
+HyperCuboid HyperBinningHistogram::getLimits() const{
+  return _binning.getLimits();
+}
+
 
 /**
 Merge two HyperBinningHistograms

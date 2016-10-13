@@ -108,6 +108,7 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
   void draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint) const;
   void draw2DSliceSet(TString path, int nSlices, const HyperPoint& slicePoint) const;
 
+  HyperCuboid getLimits() const;
 
 
   const HyperVolumeBinning& getBinning() const { return _binning; }  /**< get the HyperVolumeBinning */
@@ -121,12 +122,14 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
   void load(TString filename);
   
   void setContentsFromFunc(const HyperFunction& func);
-
+  
   void printFull() const;
  
   void draw(TString path);
   void drawDensity(TString path);
   
+
+
   virtual ~HyperBinningHistogram();
 
 };
