@@ -70,7 +70,9 @@ HyperCuboid HyperBinningMaker::splitAbovePoint(int dim, double splitPoint, const
 
   double splitCoord = lowCorner.at(dim) + (highCorner.at(dim) - lowCorner.at(dim))*splitPoint;
   if ( _snapToGrid == true ) {
-    snapToGrid(original, dim, splitCoord);
+    if ( snapToGrid(original, dim, splitCoord) == false ){
+      return HyperCuboid(0);
+    }  
   }
 
   HyperPoint newLowCorner( lowCorner );
@@ -95,7 +97,9 @@ HyperCuboid HyperBinningMaker::splitBelowPoint(int dim, double splitPoint, const
 
   double splitCoord = lowCorner.at(dim) + (highCorner.at(dim) - lowCorner.at(dim))*splitPoint;
   if ( _snapToGrid == true ) {
-    snapToGrid(original, dim, splitCoord);
+    if ( snapToGrid(original, dim, splitCoord) == false ){
+      return HyperCuboid(0);
+    }
   }
 
   HyperPoint newHighCorner( highCorner );
@@ -307,6 +311,11 @@ int HyperBinningMaker::split(int volumeNumber, int dimension, double splitPoint)
   HyperCuboid cuboid1 = splitBelowPoint(dimension, splitPoint, chosenHyperCuboid);
   HyperCuboid cuboid2 = splitAbovePoint(dimension, splitPoint, chosenHyperCuboid);
   
+  if (cuboid1.getDimension() == 0 || cuboid2.getDimension() == 0){
+    VERBOSE_LOG << "It looks like the snap to grid option means that this bin cannot be split. Returning 0."<<std::endl;
+    return 0;    
+  }
+
   //calcuate the edge length of each HyperCuboid in the binning dimension
   double edgeLength1   = cuboid1.getHighCorner().at(dimension) - cuboid1.getLowCorner().at(dimension);
   double edgeLength2   = cuboid2.getHighCorner().at(dimension) - cuboid2.getLowCorner().at(dimension);
