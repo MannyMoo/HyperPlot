@@ -322,6 +322,10 @@ int HyperBinningMakerPhaseBinning::splitDimFromGrad(int volumeNumber, HyperPoint
 
   }
   
+  if (dimWithMaxGrad == -1){
+    ERROR_LOG << "Something has gone horribly wrong - if no dimensions can be split, I shouldn't be arriving here" << std::endl;
+  }
+
   //std::cout << gradient << "  " << dimWithMaxGrad <<std::endl;
 
   return dimWithMaxGrad;
@@ -454,7 +458,7 @@ HyperPointSet HyperBinningMakerPhaseBinning::getSplitEdges( int volumeNumber ){
 
   std::vector<int> binningDimensions;
   for (int i = 0; i < dimensions; i++){
-    if ( chosenHyperCuboid.getWidth(i) <= 2.0*_minimumEdgeLength.at(i) ) continue;
+    if ( chosenHyperCuboid.getWidth(i) < 2.0*_minimumEdgeLength.at(i) ) continue;
     if ( isValidBinningDimension(i) == false ) continue;
     binningDimensions.push_back(i);
   }
