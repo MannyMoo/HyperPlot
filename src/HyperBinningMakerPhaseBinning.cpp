@@ -419,7 +419,7 @@ HyperPointSet HyperBinningMakerPhaseBinning::getSplitFaces( int volumeNumber ){
   //Project the cuboid into the splitting dimensions
   HyperCuboid projectedCuboid = chosenHyperCuboid.project(binningDimensions);
   
-  VERBOSE_LOG << "Geting vector of all my verticies" << std::endl;
+  VERBOSE_LOG << "Geting vector of all my faces" << std::endl;
 
 
 
@@ -467,7 +467,7 @@ HyperPointSet HyperBinningMakerPhaseBinning::getSplitEdges( int volumeNumber ){
   //Project the cuboid into the splitting dimensions
   HyperCuboid projectedCuboid = chosenHyperCuboid.project(binningDimensions);
   
-  VERBOSE_LOG << "Geting vector of all my verticies" << std::endl;
+  VERBOSE_LOG << "Geting vector of all my edges" << std::endl;
 
   //Get the verticies of the projected cuboid
   HyperPointSet projectedVerticies = projectedCuboid.getEdgeCenters();
@@ -613,7 +613,12 @@ HyperPoint HyperBinningMakerPhaseBinning::orderAndTestSplitPoints(HyperPointSet&
 
   }
   
-  return HyperPoint(0);
+  HyperPoint returnPoint(0);
+  if (returnPoint.getDimension() !=0 ){
+    ERROR_LOG << "This should be zero" << std::endl;
+  }
+
+  return returnPoint;
 
 }
 
@@ -638,6 +643,8 @@ int HyperBinningMakerPhaseBinning::systematicSplit(int volumeNumber, int dimensi
   pointsToTest.addHyperPointSet(faces  );
   pointsToTest.addHyperPointSet(edges  );
   
+  VERBOSE_LOG << "Got a big list of " << pointsToTest.size() << " to test " << std::endl;
+
   //pointsToTest.print();
 
   //for (int i = 0; i < corners.size(); i++){
