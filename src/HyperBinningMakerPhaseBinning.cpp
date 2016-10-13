@@ -341,7 +341,7 @@ HyperPointSet HyperBinningMakerPhaseBinning::getSplitCorners( int volumeNumber )
 
   std::vector<int> binningDimensions;
   for (int i = 0; i < dimensions; i++){
-    if ( chosenHyperCuboid.getWidth(i) <= 2.0*_minimumEdgeLength.at(i) ) continue;
+    if ( chosenHyperCuboid.getWidth(i) < 2.0*_minimumEdgeLength.at(i) ) continue;
     if ( isValidBinningDimension(i) == false ) continue;
     binningDimensions.push_back(i);
   }
@@ -409,7 +409,7 @@ HyperPointSet HyperBinningMakerPhaseBinning::getSplitFaces( int volumeNumber ){
 
   std::vector<int> binningDimensions;
   for (int i = 0; i < dimensions; i++){
-    if ( chosenHyperCuboid.getWidth(i) <= 2.0*_minimumEdgeLength.at(i) ) continue;
+    if ( chosenHyperCuboid.getWidth(i) < 2.0*_minimumEdgeLength.at(i) ) continue;
     if ( isValidBinningDimension(i) == false ) continue;
     binningDimensions.push_back(i);
   }
@@ -464,6 +464,10 @@ HyperPointSet HyperBinningMakerPhaseBinning::getSplitEdges( int volumeNumber ){
   }
 
   int nSplittingDims = binningDimensions.size();
+
+  if (nSplittingDims == 0){
+    ERROR_LOG << "There should always be at least 1 splittable dimension!" << std::endl;
+  }
 
   //Get the center of the bin and get the function / bin value
   HyperPoint point = chosenHyperCuboid.getCenter();
