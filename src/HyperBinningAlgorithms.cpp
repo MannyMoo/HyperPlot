@@ -156,6 +156,14 @@ AlgOption AlgOption::SnapToGrid         (bool val){
 }
 
 
+AlgOption AlgOption::NumPhaseBinPairs   (int val){
+  AlgOption algOption;
+  algOption._optionName = NUM_BIN_PAIRS;
+  algOption._int = val;
+  return algOption;      
+}
+
+
 
 ///Get the AlgOption::OptionName 
 ///
@@ -284,6 +292,10 @@ HyperBinningMaker* HyperBinningAlgorithms::getHyperBinningMaker(HyperCuboid binn
 
   if (optExist(AlgOption::START_DIM    )) 
     startDimension = getOpt(AlgOption::START_DIM  ).getIntOpt();  
+  
+  int numPhaseBinPairs = 3;
+  if (optExist(AlgOption::NUM_BIN_PAIRS    )) 
+    numPhaseBinPairs = getOpt(AlgOption::NUM_BIN_PAIRS  ).getIntOpt();
 
   //Chose the binning algorithm
 
@@ -312,7 +324,9 @@ HyperBinningMaker* HyperBinningAlgorithms::getHyperBinningMaker(HyperCuboid binn
     binnningMaker = new HyperBinningMakerMultiSmart(binningRange, points, startDimension);
   }
   if (_alg == FUNC_PHASE) {
-    binnningMaker = new HyperBinningMakerPhaseBinning(binningRange, 0);
+    HyperBinningMakerPhaseBinning* phaseBinningMaker = new HyperBinningMakerPhaseBinning(binningRange, 0);
+    phaseBinningMaker->setNumBinPairs(numPhaseBinPairs);
+    binnningMaker = dynamic_cast<HyperBinningMaker*>(phaseBinningMaker);
   }
   //Now set the options
 

@@ -52,7 +52,9 @@ class AlgOption{
     SNAP_TO_GRID,               /**< Ensure all bin edges are on a grid */
     GRID_MULTIPLIER,            /**< Set the grid multiplier  */
     AXIS_NAMES,                 /**< The axis names (that are provided by a HyperName) */
-    FUNC                        /**< Pass a HyperFunction to the binning alg */
+    FUNC,                       /**< Pass a HyperFunction to the binning alg */
+    NUM_BIN_PAIRS               /**< Set the number of bin pairs in the PhaseBinning algorithm (cisi binning) */
+
   };
 
   
@@ -90,6 +92,7 @@ class AlgOption{
   static AlgOption GridMultiplier     (int val);
   static AlgOption GridMultiplier     (HyperPoint val);
   static AlgOption SnapToGrid         (bool val);
+  static AlgOption NumPhaseBinPairs   (int val);
 
 
   bool isEmpty();
