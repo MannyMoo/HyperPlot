@@ -491,6 +491,14 @@ void HyperVolumeBinning::updateBinNumbering() const{
  
 }
 
+///get limits
+HyperCuboid HyperVolumeBinning::getLimits() const{
+  if (_changed == true) updateCash();   
+  return _minmax;
+}
+
+
+
 ///update the _averageBinWidth HyperPoint. 
 ///Will usually be called from updateCash()
 void HyperVolumeBinning::updateAverageBinWidth() const{

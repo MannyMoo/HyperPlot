@@ -274,6 +274,8 @@ class HyperVolumeBinning {
 
   double getMin(int dimension) const;
   double getMax(int dimension) const;
+  
+  HyperCuboid getLimits() const;
 
   std::vector<int> findOrderedBinsOnLine( const HyperPoint& point, int dim ) const;
   bool isLineInVolume( const HyperVolume& volume, const HyperPoint& point, int dim ) const;
