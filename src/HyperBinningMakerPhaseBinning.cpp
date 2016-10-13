@@ -468,9 +468,12 @@ HyperPointSet HyperBinningMakerPhaseBinning::getSplitEdges( int volumeNumber ){
   HyperCuboid projectedCuboid = chosenHyperCuboid.project(binningDimensions);
   
   VERBOSE_LOG << "Geting vector of all my edges" << std::endl;
+  VERBOSE_LOG << "There are " << nSplittingDims << " split dimensions" << std::endl;
 
   //Get the verticies of the projected cuboid
   HyperPointSet projectedVerticies = projectedCuboid.getEdgeCenters();
+
+  VERBOSE_LOG << "There are " << projectedVerticies.size() << " verticies" << std::endl;
 
   //Turn the `projected verticies` into `verticies` that use the coordinates
   //of the bin centre for all dimensions that are not in binningDimensions
@@ -508,6 +511,9 @@ HyperPointSet HyperBinningMakerPhaseBinning::getSplitEdges( int volumeNumber ){
 
     verticies.push_back(vertex);
   }
+
+  VERBOSE_LOG << "About to return my verticies" << std::endl;
+
 
   return verticies;
 
