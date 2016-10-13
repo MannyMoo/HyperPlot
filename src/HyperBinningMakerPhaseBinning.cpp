@@ -4,11 +4,12 @@
 
 HyperBinningMakerPhaseBinning::HyperBinningMakerPhaseBinning(const HyperCuboid& binningRange, HyperFunction* func) :
   HyperBinningMaker(binningRange, HyperPointSet( binningRange.getDimension() )),
+  _numBinPairs     (3),
   _maximumRandWalks(30),
   _numWalkers      (5),
-  _walkSizeFrac(0.12),
-  _numberOfCornerSplits(0),
-  _numberOfPhaseSplits(0)
+  _walkSizeFrac  (0.12),
+  _numberOfSystematicSplits(0),
+  _numberOfGradientSplits  (0)
 {
   setHyperFunction(func);
   WELCOME_LOG << "Good day from the HyperBinningMakerPhaseBinning() Constructor"<<std::endl; 
@@ -25,27 +26,23 @@ void HyperBinningMakerPhaseBinning::makeBinning(){
   int unchanged = 0;
 
  
-
-
-
-
   while ( 1==1 ){
     finishedIteration();
 
     if (s_printBinning == true) {
       INFO_LOG << "--------------------------------------------------" <<std::endl;
-      INFO_LOG << "Trying to split all bins in dimension " << _binningDimensions.at(splitDim) <<std::endl;
-      INFO_LOG << "There are " << getNumContinueBins(_binningDimensions.at(splitDim)) << " splittable bins in this dimension" << std::endl;
+      INFO_LOG << "Trying to split all bins" << std::endl;
+      INFO_LOG << "There are " << getNumContinueBins() << " splittable bins" << std::endl;
     }
-    functionSplitAll(_binningDimensions.at(splitDim));
+
+    gradientSplitAll();
 
     if (nBins == getNumBins()) unchanged++;
     else unchanged = 0;
     if (unchanged >= dimension) break;
     nBins = getNumBins();
     if (s_printBinning == true) INFO_LOG << "There is now a total of " << nBins << " bins" << std::endl;
-    splitDim++;
-    if( splitDim == dimension ) splitDim = 0;
+
   }
 
   if (s_printBinning == true) INFO_LOG << "Mint binning algorithm complete " <<std::endl;
@@ -53,9 +50,9 @@ void HyperBinningMakerPhaseBinning::makeBinning(){
 } 
 
 
-int HyperBinningMakerPhaseBinning::functionSplitAll(int dimension){
+int HyperBinningMakerPhaseBinning::gradientSplitAll(){
   
-  VERBOSE_LOG <<  "HyperBinningMakerPhaseBinning::functionSplitAll( " << dimension << " )" << std::endl;
+  VERBOSE_LOG <<  "HyperBinningMakerPhaseBinning::gradientSplitAll( )" << std::endl;
 
   int initialSize = _hyperCuboids.size();
   int nSplits = 0;
@@ -66,22 +63,20 @@ int HyperBinningMakerPhaseBinning::functionSplitAll(int dimension){
 
   for (int i = 0; i < initialSize; i++){
     if (getGlobalVolumeStatus(i) == VolumeStatus::CONTINUE) {
-      //if (getDimensionSpecificVolumeStatus(i, dimension) == VolumeStatus::CONTINUE ){
-        
-        
-        loadingbar.update(splittableDone);
-        splittableDone++;
+           
+      loadingbar.update(splittableDone);
+      splittableDone++;
+      
+      int dimension = -1;
+      int split = gradientSplit( i, dimension );
+      
+      nSplits += split;
 
-        int split = functionSplit( i, dimension );
+      if (split == 0){
+        getDimensionSpecificVolumeStatus(i, dimension) = VolumeStatus::DONE;
+        updateGlobalStatusFromDimSpecific(i);
+      }
 
-        nSplits += split;
-
-        if (split == 0){
-          getDimensionSpecificVolumeStatus(i, dimension) = VolumeStatus::DONE;
-          updateGlobalStatusFromDimSpecific(i);
-        }
-
-      //}
     }
   }
 
@@ -153,7 +148,7 @@ int HyperBinningMakerPhaseBinning::getBinNumFromFuncVal(double phase){
   }
   
   phase /= TMath::Pi();
-  phase *= 3.0;
+  phase *= double(_numBinPairs);
   phase += 1.0;
 
   int bin = floor(phase);
@@ -163,7 +158,7 @@ int HyperBinningMakerPhaseBinning::getBinNumFromFuncVal(double phase){
 
 double HyperBinningMakerPhaseBinning::getLowBinBoundary(int bin){
   
-  double binWidth =  TMath::Pi()/3.0;
+  double binWidth =  TMath::Pi()/double(_numBinPairs);
 
   if (bin > 0){
     return (bin-1.0)*binWidth;
@@ -175,7 +170,7 @@ double HyperBinningMakerPhaseBinning::getLowBinBoundary(int bin){
 
 double HyperBinningMakerPhaseBinning::getHighBinBoundary(int bin){
   
-  double binWidth =  TMath::Pi()/3.0;
+  double binWidth =  TMath::Pi()/double(_numBinPairs);
 
   if (bin > 0){
     return (bin)*binWidth;
@@ -638,7 +633,7 @@ HyperPoint HyperBinningMakerPhaseBinning::orderAndTestSplitPoints(HyperPointSet&
 
 int HyperBinningMakerPhaseBinning::systematicSplit(int volumeNumber, int dimension, double valAtCenter, HyperPoint gradient){
   
-  _numberOfCornerSplits++;
+  _numberOfSystematicSplits++;
   
   int binNumAtCenter = getBinNumFromFuncVal(valAtCenter);
 
@@ -702,11 +697,11 @@ int HyperBinningMakerPhaseBinning::systematicSplit(int volumeNumber, int dimensi
 
 
 
-int HyperBinningMakerPhaseBinning::functionSplit(int volumeNumber, int& dimension){
+int HyperBinningMakerPhaseBinning::gradientSplit(int volumeNumber, int& dimension){
   
-  _numberOfPhaseSplits++;
+  _numberOfGradientSplits++;
 
-  VERBOSE_LOG <<"Calling functionSplit(" << volumeNumber << ", " << dimension << ")" << std::endl;
+  VERBOSE_LOG <<"Calling gradientSplit(" << volumeNumber << ", " << dimension << ")" << std::endl;
 
   //first get the Hypercube that we want to split
 
@@ -731,7 +726,7 @@ int HyperBinningMakerPhaseBinning::functionSplit(int volumeNumber, int& dimensio
   dimension = splitDimFromGrad(volumeNumber, gradient);
   
   //if (fabs(gradient.at(dimension))*10.0 < gradient.norm()){
-  //  return functionSplitRandom(volumeNumber, dimension);
+  //  return randomWalkSplit(volumeNumber, dimension);
   //}
 
   //When we are splitting the bin, there is no point in splitting in a
@@ -903,9 +898,9 @@ int HyperBinningMakerPhaseBinning::functionSplit(int volumeNumber, int& dimensio
 
 }
 
-int HyperBinningMakerPhaseBinning::functionSplitRandom(int volumeNumber, int dimension){
+int HyperBinningMakerPhaseBinning::randomWalkSplit(int volumeNumber, int dimension){
   
-  VERBOSE_LOG <<"Calling functionSplit(" << volumeNumber << ", " << dimension << ")" << std::endl;
+  VERBOSE_LOG <<"Calling gradientSplit(" << volumeNumber << ", " << dimension << ")" << std::endl;
 
   //first get the Hypercube that we want to split
 
@@ -1024,31 +1019,10 @@ int HyperBinningMakerPhaseBinning::functionSplitRandom(int volumeNumber, int dim
 
 
 
-
-bool HyperBinningMakerPhaseBinning::passFunctionCriteria(HyperCuboid& cuboid1, HyperCuboid& cuboid2){
-  
-  cuboid1.getCenter();
-  cuboid2.getCenter();
-
-  return true;
-
-  //HyperPoint point1 = cuboid1.getCenter();
-  //HyperPoint point2 = cuboid2.getCenter();
-  //
-  //double val1 = _func->getVal(point1);
-  //double val2 = _func->getVal(point2);
-  //
-  ////std::cout << val1 << "  " << val2 << std::endl;
-  //if (fabs(val1 - val2) > 0.5) return true;
-  //return false;
-
-}
-
-
 HyperBinningMakerPhaseBinning::~HyperBinningMakerPhaseBinning(){
   
-  INFO_LOG << "Number of phase  splits: " << _numberOfPhaseSplits << std::endl;
-  INFO_LOG << "Number of corner splits: " <<_numberOfCornerSplits << std::endl;
+  INFO_LOG << "Number of gradient   split attempts: " << _numberOfGradientSplits   << std::endl;
+  INFO_LOG << "Number of systematic split attempts: " << _numberOfSystematicSplits << std::endl;
 
 
   GOODBYE_LOG << "Goodbye from the HyperBinningMakerPhaseBinning() Constructor" <<std::endl; 
