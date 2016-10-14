@@ -1,16 +1,31 @@
 #include "HyperVolumeBinning.h"
 
-///The only constructor, just takes the dimensionality of
-///the binning
-HyperVolumeBinning::HyperVolumeBinning(int dimension) :
-  _dimension(dimension),
+
+///The only constructor
+HyperVolumeBinning::HyperVolumeBinning() :
+  _dimension(0),
   _changed(true),
-  _averageBinWidth(dimension, 1.0),
-  _minmax( HyperPoint(dimension, 0.0), HyperPoint(dimension, 1.0) ),
-  _names(dimension)
+  _averageBinWidth(_dimension),
+  _minmax( HyperPoint(_dimension), HyperPoint(_dimension) ),
+  _names(_dimension)
 {
   WELCOME_LOG << "Hello from the HyperVolumeBinning() Constructor";
 }
+
+///Set the dimension of the HyperVolumeBinning. This can only be 
+///called once, when it is known what dimesnion it is.
+void HyperVolumeBinning::setDimension(int dim){
+  
+  if (_dimension == 0){
+    _dimension = dim;
+    _averageBinWidth = HyperPoint (_dimension, 1.0);
+    _minmax          = HyperCuboid( HyperPoint(_dimension, 0.0), HyperPoint(_dimension, 1.0) );
+    _names           = HyperName  (_dimension);
+  }
+
+}
+
+
 
 /** 
     This is used to get the bin number that the HyperPoint falls into.
@@ -581,6 +596,11 @@ double HyperVolumeBinning::getMax(int dimension) const{
 ///Add a HyperVolume to the HyperVolumeBinning and add a set of empty
 ///HyperVolume links.
 bool HyperVolumeBinning::addHyperVolume(const HyperVolume& hyperVolume){
+  
+  //If this is the first volume that has been added, use it to set the dimension
+  if (_hyperVolumes.size() == 0){
+    setDimension( hyperVolume.getDimension() );
+  }
 
   if (hyperVolume.getDimension() == _dimension) {
     _hyperVolumes.push_back(hyperVolume); 
@@ -759,6 +779,34 @@ void HyperVolumeBinning::setBranchAddresses(TTree* tree, int* binNumber, double*
 
 }
 
+///Look at the tree that contains the HyperVolumeBinning and find the dimensionality
+///
+int HyperVolumeBinning::getDimension(TTree* tree){
+
+  if (tree == 0){
+    ERROR_LOG << "Invalid tree in HyperVolumeBinning::getDimension(TTree* tree)" << std::endl;
+    return 0;
+  }  
+  
+  TString branchName = "lowCorner_0";
+  int nDim = 0;
+
+  while ( tree->GetListOfBranches()->FindObject(branchName) != 0 ){
+    nDim++;
+    branchName  = "lowCorner_";
+    branchName += nDim;
+  }
+  
+  if (nDim == 0){
+    ERROR_LOG << "I cannot find any branches in the tree that indicate a HyperVolumeBinning is stored here" << std::endl;
+    return 0;
+  }
+
+  return nDim;
+
+}
+
+
 ///Load HyperVolumeBinning from a file
 ///
 void HyperVolumeBinning::load(TString filename){
@@ -769,7 +817,7 @@ void HyperVolumeBinning::load(TString filename){
     ERROR_LOG << "Could not open TFile in HyperVolumeBinning::load(" << filename << ")";
     return;
   }
-  
+
   loadPrimaryVolumeNumbers(file);
 
   TTree* tree = (TTree*)file->Get("HyperVolumeBinning");
@@ -778,6 +826,9 @@ void HyperVolumeBinning::load(TString filename){
     ERROR_LOG << "Could not open TTree in HyperVolumeBinning::load()";
     return;
   }
+  
+  //Figure out how many dimensions there are from the tree
+  setDimension( getDimension(tree) );
 
   //Create branch addresses and link them to TTree
   int binNumber = -1;

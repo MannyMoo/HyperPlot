@@ -53,7 +53,7 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
 
   HyperVolumeBinning _binning; /**< The HyperVolumeBinning used for the HyperBinningHistogram */
   
-  HyperBinningHistogram(int dim);
+  HyperBinningHistogram();
   
   public:
   
@@ -76,7 +76,9 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
   );
  
   HyperBinningHistogram(const HyperVolumeBinning& binning);
-  HyperBinningHistogram(TString filename, int dim);
+  HyperBinningHistogram(TString filename);
+  HyperBinningHistogram(std::vector<TString> filename);
+
   
   void setNames( HyperName names ){ _binning.setNames(names); } /**< Set the HyperName (mainly used for axis labels)*/
   HyperName getNames() const {return _binning.getNames();}      /**< Get the HyperName (mainly used for axis labels)*/
@@ -86,6 +88,9 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
   void fill(const HyperPointSet& points);
 
   virtual void merge( const HistogramBase& other );
+
+  void merge( TString filenameother );
+
   
   //Project the HyperBinningHistograms down into one dimension
 

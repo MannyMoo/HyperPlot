@@ -11,6 +11,9 @@ HyperBinningHistogram::HyperBinningHistogram(const HyperVolumeBinning& binning) 
   _binning(binning)
 {
   WELCOME_LOG << "Good day from the HyperBinningHistogram() Constructor"; 
+
+  setFuncLimits( getLimits() );
+
 }
 
 /**
@@ -60,8 +63,7 @@ HyperBinningHistogram::HyperBinningHistogram(
   AlgOption opt9 
 ) :
   HistogramBase(0),
-  HyperFunction(binningRange),
-  _binning( HyperVolumeBinning(binningRange.getDimension()) )
+  HyperFunction(binningRange)
 {
 
   HyperBinningAlgorithms algSetup(alg);
@@ -83,27 +85,57 @@ HyperBinningHistogram::HyperBinningHistogram(
 
   delete binnningMaker;
 
+  //This inherets from a HyperFunction. Although non-essential, it's useful for
+  //the function to have some limits for it's domain.
+  setFuncLimits( getLimits() );
+
 }
 
 /**
 Load a HyperBinningHistogram from file
 */
-HyperBinningHistogram::HyperBinningHistogram(TString filename, int dim) :
-  HistogramBase(0),
-  _binning(dim)
+HyperBinningHistogram::HyperBinningHistogram(TString filename) :
+  HistogramBase(0)
 {
   WELCOME_LOG << "Good day from the HyperBinningHistogram() Constructor";
   load(filename);
 
+  //This inherets from a HyperFunction. Although non-essential, it's useful for
+  //the function to have some limits for it's domain.
   setFuncLimits( getLimits() );
 }
 
 /**
+Load an array of HyperBinningHistograms from different files and merge them
+*/
+HyperBinningHistogram::HyperBinningHistogram(std::vector<TString> filename) :
+  HistogramBase(0)
+{
+  WELCOME_LOG << "Good day from the HyperBinningHistogram() Constructor";
+  
+  int nFiles = filename.size();
+  if (nFiles == 0){
+    ERROR_LOG << "The list of filenames you provided to HyperBinningHistogram is empty" << std::endl;
+  }
+
+  load(filename.at(0));
+
+  for (int i = 1; i < nFiles; i++){
+    merge(filename.at(i));
+  }
+  
+  //This inherets from a HyperFunction. Although non-essential, it's useful for
+  //the function to have some limits for it's domain.
+  setFuncLimits( getLimits() );
+
+}
+
+
+/**
 Private constructor
 */
-HyperBinningHistogram::HyperBinningHistogram(int dim) :
-  HistogramBase(0),
-  _binning(dim)
+HyperBinningHistogram::HyperBinningHistogram() :
+  HistogramBase(0)
 {
   WELCOME_LOG << "Good day from the HyperBinningHistogram() Constructor";
 }
@@ -176,8 +208,19 @@ void HyperBinningHistogram::merge( const HistogramBase& other ){
   _binning.mergeBinnings( histOther->_binning );
   HistogramBase::merge( other );
 
+  setFuncLimits( getLimits() );
+
 }
 
+/**
+Merge this histogram with another in a file
+*/
+void HyperBinningHistogram::merge( TString filenameother ){
+
+  HyperBinningHistogram other(filenameother);
+  merge( other );
+
+}
 
 
 /**
@@ -331,7 +374,7 @@ HyperBinningHistogram HyperBinningHistogram::slice(std::vector<int> sliceDims, s
   int nSliceDims    = sliceDims.size();
   int nEndDims      = nStartingDims - nSliceDims;
 
-  HyperVolumeBinning temp(nEndDims);
+  HyperVolumeBinning temp;
   
   HyperPoint point(nStartingDims);
   for (int i = 0; i < nSliceDims; i++) point.at(sliceDims.at(i)) = sliceVals.at(i);

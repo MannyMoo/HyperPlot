@@ -41,11 +41,11 @@ class HyperFunction{
   
   void setFuncLimits(const HyperCuboid& limits);
 
-  TH2D make2DFuncSlice   (TString name, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint, int nbins) const;
-  void draw2DFuncSlice   (TString path, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint, int nbins) const;
-  void draw2DFuncSliceSet(TString path, int sliceDimX, int sliceDimY, int sliceSetDim, int nSlices, const HyperPoint& slicePoint, int nbins) const;
-  void draw2DFuncSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint, int nbins) const;
-  void draw2DFuncSliceSet(TString path, int nSlices, const HyperPoint& slicePoint, int nbins) const;
+  TH2D make2DFuncSlice   (TString name, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint, int nbins = 100) const;
+  void draw2DFuncSlice   (TString path, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint, int nbins = 100) const;
+  void draw2DFuncSliceSet(TString path, int sliceDimX, int sliceDimY, int sliceSetDim, int nSlices, const HyperPoint& slicePoint, int nbins = 100) const;
+  void draw2DFuncSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint, int nbins = 100) const;
+  void draw2DFuncSliceSet(TString path, int nSlices, const HyperPoint& slicePoint, int nbins = 100) const;
   
   double getDifference(const HyperFunction& other, const HyperPoint& point);
   /**< Get the difference between this HyperFunction and another HyperFunction at a point

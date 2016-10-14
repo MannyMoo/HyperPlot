@@ -228,16 +228,21 @@ class HyperVolumeBinning {
   void updateBinNumbering() const; 
   void updateAverageBinWidth() const;
   void updateMinMax() const;
+  
+  void setDimension(int dim);
 
   public:
   
-  HyperVolumeBinning(int dimension);
+  HyperVolumeBinning();
 
   //for loading and saving to TFiles
   void load(TString filename);
   void save(TString filename) const;
   void save() const; 
   
+  int getDimension(TTree* tree);
+
+
   void savePrimaryVolumeNumbers() const;
   void loadPrimaryVolumeNumbers(TFile* file);
 

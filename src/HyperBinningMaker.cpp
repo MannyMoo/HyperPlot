@@ -1123,7 +1123,7 @@ HyperVolumeBinning HyperBinningMaker::getHyperVolumeBinning() const{
   
   int dimension = _hyperCuboids.at(0).getDimension();
 
-  HyperVolumeBinning temp(dimension);
+  HyperVolumeBinning temp;
   
   for (unsigned int i = 0; i < _hyperCuboids.size(); i++){
     HyperVolume hyperVolume(dimension);
