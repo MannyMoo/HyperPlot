@@ -129,11 +129,15 @@ TString GetDataBinningDir(int dim ){
 
 }
 
-void DrawHistogramSlices(TString filename, TString outdir, int dim, int nSlicesPerSet = 50){
-
-  HyperPoint slicePoint(dim, 0.0);
+void DrawHistogramSlices(TString filename, TString outdir, int nSlicesPerSet = 50){
   
-  HyperBinningHistogram hist(filename, dim);
+  //Load histogram from file
+  HyperBinningHistogram hist(filename);
+  
+  //take the slice point to be the center of the limits
+  HyperPoint slicePoint = hist.getLimits().getCenter();
+  
+  //Draw a load of slices
   hist.draw2DSliceSet(outdir, nSlicesPerSet, slicePoint);
 
 }
@@ -253,8 +257,8 @@ void DataBinningExample(int dim){
     TString slicedir = outputdir + "slices/";
     gSystem->Exec("mkdir " + slicedir);
 
-    DrawHistogramSlices(outputdir + "Histogram1.root", slicedir + "Histogram1", dim, nSlicesPerSet);
-    DrawHistogramSlices(outputdir + "Histogram2.root", slicedir + "Histogram2", dim, nSlicesPerSet);    
+    DrawHistogramSlices(outputdir + "Histogram1.root", slicedir + "Histogram1", nSlicesPerSet);
+    DrawHistogramSlices(outputdir + "Histogram2.root", slicedir + "Histogram2", nSlicesPerSet);    
 
   }
 
@@ -344,7 +348,7 @@ void FunctionBinningExample(int dim, int functionNum, int nbinpairs){
   else{
     TString slicedir = outputdir + "slices/";
     gSystem->Exec("mkdir " + slicedir);    
-    DrawHistogramSlices(outputdir + "PhaseBinning.root", slicedir, dim);
+    DrawHistogramSlices(outputdir + "PhaseBinning.root", slicedir);
   }
 
 }
