@@ -248,6 +248,147 @@ void HyperBinningHistogram::setContentsFromFunc(const HyperFunction& func){
 
 
 /**
+*/
+void HyperBinningHistogram::mergeBinsWithSameContent(){
+  
+  
+  std::map<int, bool> volumeKept;
+  for (int i = 0; i < _binning.getNumHyperVolumes(); i++){  
+    volumeKept[i] = true;
+  }
+  
+  //Loop over all HyperVolumes and see if there are any linked bins.
+  //If there are, see if these linked bins are actually bins, and not
+  //just part of the binning hierarchy. If they are actually bins,
+  //See if they al have the same bin content. If they do, mark them 
+  //to be removed. 
+
+  for (int i = 0; i < _binning.getNumHyperVolumes(); i++){
+
+    std::vector<int> linkedVols = _binning.getLinkedHyperVolumes(i);
+    if (linkedVols.size() == 0) continue;
+    
+    bool linksLeadToBins = true;
+
+    for (unsigned j = 0; j < linkedVols.size(); j++){
+      int volNum = linkedVols.at(j);
+      if (_binning.getLinkedHyperVolumes(volNum).size() != 0){
+        linksLeadToBins = false;
+        break;
+      } 
+    }
+    
+    if (linksLeadToBins == false) continue;
+    
+    double binCont0 = -99999.9;
+    
+    bool binsHaveSameContent = true;
+
+    for (unsigned j = 0; j < linkedVols.size(); j++){
+      int volNum = linkedVols.at(j);
+      int binNum = _binning.getBinNum(volNum);
+      double binContent = getBinContent(binNum);
+      if (j == 0) binCont0 = binContent;
+
+      if (binContent != binCont0){
+        binsHaveSameContent = false;
+        break;
+      }
+
+    } 
+
+    if (binsHaveSameContent == false) continue;
+    
+    for (unsigned j = 0; j < linkedVols.size(); j++){
+      int volNum = linkedVols.at(j);      
+      volumeKept[volNum] = false;
+    } 
+
+ 
+  }
+  
+  //Make a map of the old volume numbers to the new ones (once the removed bins have
+  //actually been removed).
+
+  std::map<int, int> oldToNewVolumeNum;
+  int newVolNum = 0;  
+
+  for (int i = 0; i < _binning.getNumHyperVolumes(); i++){
+    bool exists = volumeKept[i];
+
+    if (exists == true){
+      oldToNewVolumeNum[i] = newVolNum;
+      newVolNum++;
+    }
+    else{
+      oldToNewVolumeNum[i] = -1;
+    }
+
+  }
+  
+  //Create a new HyperVolumeBinning with the bins removed
+
+  HyperVolumeBinning binningNew;
+  
+  int count = 0;
+
+  for (int i = 0; i < _binning.getNumHyperVolumes(); i++){
+    HyperVolume vol = _binning.getHyperVolume(i);
+    
+    int newVolNum = oldToNewVolumeNum[i];
+
+    if (newVolNum == -1) continue;
+    
+    if (newVolNum != count){
+      ERROR_LOG << "Something has gone wrong in mergeBinsWithSameContent()" << std::endl;
+    }
+
+    binningNew.addHyperVolume(vol);
+    
+    std::vector<int> linkedVols = _binning.getLinkedHyperVolumes( i );
+
+    int nLinked = 0;
+    for (unsigned j = 0; j < linkedVols.size(); j++){
+      int linkVolNum    = linkedVols.at(j);
+      int newLinkVolNum = oldToNewVolumeNum[linkVolNum];
+
+      if (newLinkVolNum != -1){
+        binningNew.addHyperVolumeLink(newVolNum, newLinkVolNum);
+        nLinked++;
+      }
+
+
+    }
+    
+    if (nLinked == 1){
+      INFO_LOG << "This should never be one" << std::endl;
+    }
+
+    count++;
+  }
+  
+  
+
+  std::vector<int> primVolNums = _binning.getPrimaryVolumeNumbers();
+  
+  for (unsigned i = 0; i < primVolNums.size(); i++){
+    int oldVolNum = primVolNums.at(i);
+    int newVolNum = oldToNewVolumeNum[oldVolNum];
+    binningNew.addPrimaryVolumeNumber(newVolNum);
+  }
+
+  HyperBinningHistogram newHist(binningNew);
+  
+  newHist.setContentsFromFunc(*this);
+
+  std::cout << "You could remove at least " << _binning.getNumBins() - binningNew.getNumBins() << std::endl;
+  
+  *this = newHist;
+
+
+}
+
+/**
 Draw the HyperBinningHistogram - the drawing class
 used depends on the dimensionality of the data.
 This just plots the raw bin contents, not the 

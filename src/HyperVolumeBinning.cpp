@@ -164,6 +164,8 @@ bool HyperVolumeBinning::isPrimaryVolume(int volumeNumber) const{
 }
 
 
+
+
 /// \todo This doesn't really work yet
 ///
 void HyperVolumeBinning::drawBin(int dim, int bin, RootPlotter2D& plotter) const{
@@ -820,6 +822,12 @@ int HyperVolumeBinning::getDimension(TTree* tree){
 
   return nDim;
 
+}
+
+///Look at the tree that contains the HyperVolumeBinning and find the dimensionality
+///
+std::vector<int> HyperVolumeBinning::getPrimaryVolumeNumbers() const{
+  return _primaryVolumeNumbers;
 }
 
 

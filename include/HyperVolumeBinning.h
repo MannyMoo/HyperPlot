@@ -285,6 +285,7 @@ class HyperVolumeBinning {
 
   std::vector<int> getLinkedHyperVolumes( int volumeNumber ) const;
 
+  std::vector<int> getPrimaryVolumeNumbers() const;
 
   std::vector<int> findOrderedBinsOnLine( const HyperPoint& point, int dim ) const;
   bool isLineInVolume( const HyperVolume& volume, const HyperPoint& point, int dim ) const;

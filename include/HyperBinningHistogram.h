@@ -48,7 +48,7 @@ Binning Algorithm Options:
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-  
+
 class HyperBinningHistogram : public HistogramBase, public HyperFunction {
 
   protected:
@@ -137,7 +137,8 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
   void draw(TString path);
   void drawDensity(TString path);
   
-
+  void mergeBinsWithSameContent();
+  
 
   virtual ~HyperBinningHistogram();
 
