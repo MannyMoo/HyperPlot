@@ -47,7 +47,8 @@ Binning Algorithm Options:
 
 #include <iostream>
 #include <fstream>
-
+#include <iomanip>
+  
 class HyperBinningHistogram : public HistogramBase, public HyperFunction {
 
   protected:
