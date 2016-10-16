@@ -146,6 +146,22 @@ void HyperVolumeBinning::mergeBinnings( const HyperVolumeBinning& other ){
 
 }
 
+std::vector<int> HyperVolumeBinning::getLinkedHyperVolumes( int volumeNumber ) const{
+
+  return _linkedHyperVolumes.at(volumeNumber);
+
+}
+
+
+bool HyperVolumeBinning::isPrimaryVolume(int volumeNumber) const{
+
+  for (unsigned i = 0; i < _primaryVolumeNumbers.size(); i++){
+    if (_primaryVolumeNumbers.at(i) == volumeNumber) return true;
+  }
+
+  return false;
+
+}
 
 
 /// \todo This doesn't really work yet

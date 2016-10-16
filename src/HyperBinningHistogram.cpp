@@ -118,9 +118,11 @@ HyperBinningHistogram::HyperBinningHistogram(std::vector<TString> filename) :
     ERROR_LOG << "The list of filenames you provided to HyperBinningHistogram is empty" << std::endl;
   }
 
+  INFO_LOG << "Loading HyperBinningHistogram at: " << filename.at(0) << std::endl;
   load(filename.at(0));
 
   for (int i = 1; i < nFiles; i++){
+    INFO_LOG << "Loading and merging HyperBinningHistogram at: " << filename.at(i) << std::endl;
     merge(filename.at(i));
   }
   
@@ -629,6 +631,63 @@ void HyperBinningHistogram::save(TString filename){
   file->Close();
 
 }
+
+/**
+Save the HyperBinningHistogram to a .txt file
+*/
+void HyperBinningHistogram::saveToTxtFile(TString filename) const{
+  
+  int nVolumes = _binning.getNumHyperVolumes();
+  
+  std::ofstream myfile;
+  myfile.open (filename);
+
+  for (int i = 0; i < nVolumes; i++ ){
+    HyperVolume vol  = _binning.getHyperVolume(i);
+    HyperCuboid cube = vol.getHyperCuboid(0);
+    int binNumber = _binning.getBinNum(i); 
+    double content = -1.0;
+    double error   = -1.0;
+
+    bool isPrimary = _binning.isPrimaryVolume(i);
+    bool isBin     = false;
+    
+    std::vector<int> linkedBins = _binning.getLinkedHyperVolumes(i);
+
+    if (binNumber != -1){
+      content = getBinContent(binNumber);
+      error   = getBinError  (binNumber);
+      isBin   = true;
+    }
+    
+    myfile << std::setw(4) << std::left;
+    if (isPrimary) myfile << "P"; 
+    if (isBin    ) myfile << "B"; 
+    if (!isBin   ) myfile << "V";
+    
+    int width = vol.getDimension()*10 + 10;
+
+    myfile <<  std::setw(width) << std::left << cube.getLowCorner() << std::setw(width) << std::left << cube.getHighCorner();
+    
+    if (isBin){
+      myfile << std::setw(10) << std::left <<  content << std::setw(10) << std::left <<  error;
+    }
+
+    if (!isBin){
+      for (unsigned j = 0; j < linkedBins.size(); j++){
+        myfile << std::setw(10) << std::left <<  linkedBins.at(j);
+      }
+    }
+    
+    myfile << std::endl;
+  }
+
+  myfile.close();
+
+
+}
+
+
 
 /**
 Load the HyperBinningHistogram from a TFile

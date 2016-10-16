@@ -425,17 +425,21 @@ double& HyperPoint::at  (int i){
 ///Print the HyperPoint to the given std::ostream (default is std::cout).
 ///
 void HyperPoint::print(std::ostream& os, int endline) const{
-
-  os << "( ";
-  for(int i = 0; i < (size() - 1); i++){
-    os << _coords.at(i) << ", ";
-  }
-  os << _coords.at(size() - 1);
-  os << " )    ";    
   
-  this->printWeight(os, 0);
+  std::ostringstream oss; 
 
-  if (endline) os << std::endl;
+  oss << "( ";
+  for(int i = 0; i < (size() - 1); i++){
+    oss << std::setw(10) << std::left << _coords.at(i) << ", ";
+  }
+  oss << std::setw(10) << std::left << _coords.at(size() - 1);
+  oss << ")";    
+  
+  this->printWeight(oss, 0);
+
+  if (endline) oss << std::endl;
+
+  os << oss.str();
 }
 
 std::ostream& operator<<(std::ostream& os, const HyperPoint& point) {
