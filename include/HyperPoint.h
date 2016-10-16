@@ -20,6 +20,7 @@
 
 // std includes
 #include <sstream> 
+#include <iomanip>
 
 
 class HyperPoint : public Weights {
