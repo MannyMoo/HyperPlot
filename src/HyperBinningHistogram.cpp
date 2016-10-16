@@ -384,7 +384,8 @@ void HyperBinningHistogram::mergeBinsWithSameContent(){
   std::cout << "You could remove at least " << _binning.getNumBins() - binningNew.getNumBins() << std::endl;
   
   *this = newHist;
-
+  
+  if ( _binning.getNumBins() - binningNew.getNumBins() > 0 ) mergeBinsWithSameContent();
 
 }
 
