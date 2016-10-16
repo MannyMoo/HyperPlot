@@ -577,6 +577,9 @@ HyperBinningHistogram HyperBinningHistogram::slice(std::vector<int> sliceDims, s
   }  
 
   slicedHist.setNames(names);
+  
+  slicedHist.setMin( getMin() );
+  slicedHist.setMax( getMax() );
 
   //std::cout << "Done" << std::endl;
 
