@@ -45,7 +45,8 @@ Binning Algorithm Options:
 
 // std includes
 
-
+#include <iostream>
+#include <fstream>
 
 class HyperBinningHistogram : public HistogramBase, public HyperFunction {
 
@@ -129,7 +130,9 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
   void setContentsFromFunc(const HyperFunction& func);
   
   void printFull() const;
- 
+  
+  void saveToTxtFile(TString filename) const;
+
   void draw(TString path);
   void drawDensity(TString path);
   

@@ -19,7 +19,7 @@
 #include "TRandom.h"
 
 // std includes
-
+#include <sstream> 
 
 
 class HyperPoint : public Weights {

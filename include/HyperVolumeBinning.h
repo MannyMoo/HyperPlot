@@ -242,6 +242,7 @@ class HyperVolumeBinning {
   
   int getDimension(TTree* tree);
 
+  bool isPrimaryVolume(int volumeNumber) const;
 
   void savePrimaryVolumeNumbers() const;
   void loadPrimaryVolumeNumbers(TFile* file);
@@ -281,6 +282,9 @@ class HyperVolumeBinning {
   double getMax(int dimension) const;
   
   HyperCuboid getLimits() const;
+
+  std::vector<int> getLinkedHyperVolumes( int volumeNumber ) const;
+
 
   std::vector<int> findOrderedBinsOnLine( const HyperPoint& point, int dim ) const;
   bool isLineInVolume( const HyperVolume& volume, const HyperPoint& point, int dim ) const;
