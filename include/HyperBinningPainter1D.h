@@ -12,7 +12,6 @@
 
 // HyperPlot includes
 #include "MessageService.h"
-#include "HyperBinningHistogram.h"
 #include "RootPlotter1D.h"
 #include "RootPlotter2D.h"
 #include "HyperBinningPainter.h"
@@ -33,7 +32,7 @@ class HyperBinningPainter1D : public HyperBinningPainter {
 
   public:
   
-  HyperBinningPainter1D(HyperBinningHistogram* histogram);
+  HyperBinningPainter1D(HyperHistogram* histogram);
   
   TH1D* getHistogram(TString histname);
 

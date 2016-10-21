@@ -1,6 +1,6 @@
 #include "HyperBinningMaker.h"
 
-#include "HyperBinningHistogram.h"
+#include "HyperHistogram.h"
 
 ///Just an empty contructor to make it compile (private, will never be used)
 ///
@@ -1119,11 +1119,11 @@ int HyperBinningMaker::getNumContinueBins(int dimension) const{
 
 ///Use the current state of the HyperBinningMaker to create
 ///a HyperVolumeBinning
-HyperVolumeBinning HyperBinningMaker::getHyperVolumeBinning() const{
+HyperBinning HyperBinningMaker::getHyperVolumeBinning() const{
   
   int dimension = _hyperCuboids.at(0).getDimension();
 
-  HyperVolumeBinning temp;
+  HyperBinning temp;
   
   for (unsigned int i = 0; i < _hyperCuboids.size(); i++){
     HyperVolume hyperVolume(dimension);
@@ -1143,11 +1143,11 @@ HyperVolumeBinning HyperBinningMaker::getHyperVolumeBinning() const{
 
 ///Use the current state of the HyperBinningMaker to create
 ///a HyperBinningHistogram
-HyperBinningHistogram* HyperBinningMaker::getHyperBinningHistogram() const{
+HyperHistogram* HyperBinningMaker::getHyperBinningHistogram() const{
 
-  HyperVolumeBinning binning = getHyperVolumeBinning();
+  HyperBinning binning = getHyperVolumeBinning();
   
-  HyperBinningHistogram* histogram = new HyperBinningHistogram( binning );
+  HyperHistogram* histogram = new HyperHistogram( binning );
 
   for ( int i = 0; i < binning.getNumBins(); i++){
     int volumeNumber = binning.getHyperVolumeNumber(i);
@@ -1155,7 +1155,7 @@ HyperBinningHistogram* HyperBinningMaker::getHyperBinningHistogram() const{
     histogram->setBinError  (i, double( sqrt(_hyperPointSets.at(volumeNumber).getSumW2() ) ) );
   }
   
-  if (s_printBinning == true) INFO_LOG << "Made HyperBinningHistogram"<<std::endl;
+  if (s_printBinning == true) INFO_LOG << "Made HyperHistogram"<<std::endl;
   
   histogram->setNames(_names);
 
@@ -1165,11 +1165,11 @@ HyperBinningHistogram* HyperBinningMaker::getHyperBinningHistogram() const{
 
 ///Use the current state of the HyperBinningMaker to create
 ///a HyperBinningHistogram for the shadow events
-HyperBinningHistogram* HyperBinningMaker::getShadowHyperBinningHistogram() const{
+HyperHistogram* HyperBinningMaker::getShadowHyperBinningHistogram() const{
 
-  HyperVolumeBinning binning = getHyperVolumeBinning();
+  HyperBinning binning = getHyperVolumeBinning();
   
-  HyperBinningHistogram* histogram = new HyperBinningHistogram( binning );
+  HyperHistogram* histogram = new HyperHistogram( binning );
 
   for ( int i = 0; i < binning.getNumBins(); i++){
     int volumeNumber = binning.getHyperVolumeNumber(i);
@@ -1177,7 +1177,7 @@ HyperBinningHistogram* HyperBinningMaker::getShadowHyperBinningHistogram() const
     histogram->setBinError  (i, double( sqrt(_shadowHyperPointSets.at(volumeNumber).getSumW2() ) ) );
   }
   
-  if (s_printBinning == true) INFO_LOG << "Made HyperBinningHistogram"<<std::endl;
+  if (s_printBinning == true) INFO_LOG << "Made HyperHistogram"<<std::endl;
   
   histogram->setNames(_names);
   
@@ -1187,10 +1187,10 @@ HyperBinningHistogram* HyperBinningMaker::getShadowHyperBinningHistogram() const
 
 ///Use the current state of the HyperBinningMaker to create
 ///a HyperBinningHistogram for the ratio of events to shadow events
-HyperBinningHistogram* HyperBinningMaker::getRatioHyperBinningHistogram() const{
+HyperHistogram* HyperBinningMaker::getRatioHyperBinningHistogram() const{
 
-  HyperBinningHistogram* numerator = new HyperBinningHistogram( *getHyperBinningHistogram() );
-  HyperBinningHistogram denominator( *getShadowHyperBinningHistogram() );
+  HyperHistogram* numerator = new HyperHistogram( *getHyperBinningHistogram() );
+  HyperHistogram denominator( *getShadowHyperBinningHistogram() );
 
   numerator->divide(denominator);
 
@@ -1204,7 +1204,7 @@ HyperVolumeBinning, and draw it.
 */
 void HyperBinningMaker::drawCurrentState(TString path) const{
 
-  HyperBinningHistogram* hist = getHyperBinningHistogram();
+  HyperHistogram* hist = getHyperBinningHistogram();
   
   hist->drawDensity(path);
 

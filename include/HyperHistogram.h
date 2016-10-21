@@ -29,15 +29,16 @@ Binning Algorithm Options:
  
  **/
  
-#ifndef HYPERBINNINGHISTOGRAM_HH
-#define HYPERBINNINGHISTOGRAM_HH
+#ifndef HYPERHISTOGRAM_HH
+#define HYPERHISTOGRAM_HH
 
 // HyperPlot includes
 #include "MessageService.h"
 #include "HistogramBase.h"
 #include "HyperFunction.h"
-#include "HyperVolumeBinning.h"
 #include "HyperName.h"
+#include "BinningBase.h"
+#include "HyperBinning.h"
 
 #include "HyperBinningAlgorithms.h"
 
@@ -49,17 +50,20 @@ Binning Algorithm Options:
 #include <fstream>
 #include <iomanip>
 
-class HyperBinningHistogram : public HistogramBase, public HyperFunction {
+class HyperHistogram : public HistogramBase, public HyperFunction {
 
   protected:
 
-  HyperVolumeBinning _binning; /**< The HyperVolumeBinning used for the HyperBinningHistogram */
+  BinningBase* _binning; /**< The HyperVolumeBinning used for the HyperHistogram */
   
-  HyperBinningHistogram();
+  HyperHistogram();
   
+  //BinningBase& getBinning() { return (*_binning); }  /**< get the HyperVolumeBinning */
+
+
   public:
   
-  HyperBinningHistogram(
+  HyperHistogram(
     const HyperCuboid&   binningRange, 
     const HyperPointSet& points, 
 
@@ -77,13 +81,13 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
     AlgOption opt9 = AlgOption::Empty()
   );
  
-  HyperBinningHistogram(const HyperVolumeBinning& binning);
-  HyperBinningHistogram(TString filename);
-  HyperBinningHistogram(std::vector<TString> filename);
+  HyperHistogram(const BinningBase& binning);
+  HyperHistogram(TString filename);
+  HyperHistogram(std::vector<TString> filename);
 
   
-  void setNames( HyperName names ){ _binning.setNames(names); } /**< Set the HyperName (mainly used for axis labels)*/
-  HyperName getNames() const {return _binning.getNames();}      /**< Get the HyperName (mainly used for axis labels)*/
+  void setNames( HyperName names );
+  HyperName getNames() const;
 
   int  fill(const HyperPoint& coords, double weight);
   int  fill(const HyperPoint& coords);
@@ -94,7 +98,7 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
   void merge( TString filenameother );
 
   
-  //Project the HyperBinningHistograms down into one dimension
+  //Project the HyperHistograms down into one dimension
 
   void project(TH1D* histogram, const HyperCuboid& cuboid, double content, int dimension) const;
   void project(TH1D* histogram, const HyperVolume& hyperVolume, double content, int dimension) const;
@@ -103,13 +107,13 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
   void drawProjection    (TString path, int dim = 0, int bins = 100) const;
   void drawAllProjections(TString path, int bins) const;
 
-  void compareProjection    (TString path, int dim, const HyperBinningHistogram& other, int bins = 100) const;
-  void compareAllProjections(TString path, const HyperBinningHistogram& other, int bins = 100) const;
+  void compareProjection    (TString path, int dim, const HyperHistogram& other, int bins = 100) const;
+  void compareAllProjections(TString path, const HyperHistogram& other, int bins = 100) const;
 
   
 
-  HyperBinningHistogram slice(std::vector<int> sliceDims, std::vector<double> sliceVals) const;
-  HyperBinningHistogram slice(int dim, double val) const;
+  HyperHistogram slice(std::vector<int> sliceDims, std::vector<double> sliceVals) const;
+  HyperHistogram slice(int dim, double val) const;
   void draw2DSlice   (TString path, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint) const;
   void draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int sliceSetDim, int nSlices, const HyperPoint& slicePoint) const;
   void draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint) const;
@@ -118,13 +122,15 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
   HyperCuboid getLimits() const;
 
 
-  const HyperVolumeBinning& getBinning() const { return _binning; }  /**< get the HyperVolumeBinning */
+  const BinningBase& getBinning() const { return (*_binning); }  /**< get the HyperVolumeBinning */
   
   virtual double getVal(const HyperPoint& point) const;
 
   virtual double getBinVolume(int bin) const;
 
   void save(TString filename);
+
+  TString getBinningType(TString filename);
 
   void load(TString filename);
   
@@ -140,7 +146,7 @@ class HyperBinningHistogram : public HistogramBase, public HyperFunction {
   void mergeBinsWithSameContent();
   
 
-  virtual ~HyperBinningHistogram();
+  virtual ~HyperHistogram();
 
 };
 

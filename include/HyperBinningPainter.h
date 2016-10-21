@@ -12,9 +12,11 @@
 
 // HyperPlot includes
 #include "MessageService.h"
-#include "HyperBinningHistogram.h"
 #include "RootPlotter1D.h"
 #include "RootPlotter2D.h"
+
+#include "BinningBase.h"
+#include "HyperHistogram.h"
 
 
 // Root includes
@@ -29,12 +31,12 @@ class HyperBinningPainter {
   
   protected:
 
-  HyperBinningHistogram* _histogram; /**< Pointer to the HyperBinningHistogram I'm going to plot */
+  HyperHistogram* _histogram; /**< Pointer to the HyperBinningHistogram I'm going to plot */
   bool _density; /**< Am I drawing the bin contents or the density? */ 
 
   public:
   
-  HyperBinningPainter(HyperBinningHistogram* histogram);
+  HyperBinningPainter(HyperHistogram* histogram);
   
   void useDensity(bool val){_density = val;}
   /**< Am I drawing the bin contents or the density? */ 

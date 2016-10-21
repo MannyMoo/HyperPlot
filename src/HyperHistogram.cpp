@@ -1,4 +1,4 @@
-#include "HyperBinningHistogram.h"
+#include "HyperHistogram.h"
 #include "HyperBinningPainter1D.h"
 #include "HyperBinningPainter2D.h"
 
@@ -6,11 +6,11 @@
 /**
 The most basic constructor - just pass my the HyperVolumeBinning
 */
-HyperBinningHistogram::HyperBinningHistogram(const HyperVolumeBinning& binning) :
+HyperHistogram::HyperHistogram(const BinningBase& binning) :
   HistogramBase(binning.getNumBins()),
-  _binning(binning)
+  _binning(binning.clone())
 {
-  WELCOME_LOG << "Good day from the HyperBinningHistogram() Constructor"; 
+  WELCOME_LOG << "Good day from the HyperHistogram() Constructor"; 
 
   setFuncLimits( getLimits() );
 
@@ -47,7 +47,7 @@ Binning Algorithm Options:
 
 
 */
-HyperBinningHistogram::HyperBinningHistogram(
+HyperHistogram::HyperHistogram(
   const HyperCuboid&   binningRange, 
   const HyperPointSet& points, 
   HyperBinningAlgorithms::Alg alg, 
@@ -92,12 +92,12 @@ HyperBinningHistogram::HyperBinningHistogram(
 }
 
 /**
-Load a HyperBinningHistogram from file
+Load a HyperHistogram from file
 */
-HyperBinningHistogram::HyperBinningHistogram(TString filename) :
+HyperHistogram::HyperHistogram(TString filename) :
   HistogramBase(0)
 {
-  WELCOME_LOG << "Good day from the HyperBinningHistogram() Constructor";
+  WELCOME_LOG << "Good day from the HyperHistogram() Constructor";
   load(filename);
 
   //This inherets from a HyperFunction. Although non-essential, it's useful for
@@ -106,23 +106,23 @@ HyperBinningHistogram::HyperBinningHistogram(TString filename) :
 }
 
 /**
-Load an array of HyperBinningHistograms from different files and merge them
+Load an array of HyperHistograms from different files and merge them
 */
-HyperBinningHistogram::HyperBinningHistogram(std::vector<TString> filename) :
+HyperHistogram::HyperHistogram(std::vector<TString> filename) :
   HistogramBase(0)
 {
-  WELCOME_LOG << "Good day from the HyperBinningHistogram() Constructor";
+  WELCOME_LOG << "Good day from the HyperHistogram() Constructor";
   
   int nFiles = filename.size();
   if (nFiles == 0){
-    ERROR_LOG << "The list of filenames you provided to HyperBinningHistogram is empty" << std::endl;
+    ERROR_LOG << "The list of filenames you provided to HyperHistogram is empty" << std::endl;
   }
 
-  INFO_LOG << "Loading HyperBinningHistogram at: " << filename.at(0) << std::endl;
+  INFO_LOG << "Loading HyperHistogram at: " << filename.at(0) << std::endl;
   load(filename.at(0));
 
   for (int i = 1; i < nFiles; i++){
-    INFO_LOG << "Loading and merging HyperBinningHistogram at: " << filename.at(i) << std::endl;
+    INFO_LOG << "Loading and merging HyperHistogram at: " << filename.at(i) << std::endl;
     merge(filename.at(i));
   }
   
@@ -136,29 +136,43 @@ HyperBinningHistogram::HyperBinningHistogram(std::vector<TString> filename) :
 /**
 Private constructor
 */
-HyperBinningHistogram::HyperBinningHistogram() :
+HyperHistogram::HyperHistogram() :
   HistogramBase(0)
 {
-  WELCOME_LOG << "Good day from the HyperBinningHistogram() Constructor";
+  WELCOME_LOG << "Good day from the HyperHistogram() Constructor";
 }
 
-/**
-Fill the HyperBinningHistogram with a HyperPoint and aspecified weight
-*/
-int HyperBinningHistogram::fill(const HyperPoint& coords, double weight){
 
-  int binNumber = _binning.getBinNum(coords);
+void HyperHistogram::setNames( HyperName names ){ 
+  _binning->setNames(names); 
+}
+/**< Set the HyperName (mainly used for axis labels)*/
+
+HyperName HyperHistogram::getNames() const {
+  return _binning->getNames();
+}      
+/**< Get the HyperName (mainly used for axis labels)*/
+
+
+
+
+/**
+Fill the HyperHistogram with a HyperPoint and aspecified weight
+*/
+int HyperHistogram::fill(const HyperPoint& coords, double weight){
+
+  int binNumber = _binning->getBinNum(coords);
   this->fillBase(binNumber, weight);
   return binNumber;
 }
 
 /**
-Fill the HyperBinningHistogram with a HyperPoint. If the 
+Fill the HyperHistogram with a HyperPoint. If the 
 HyperPoint has a weight, use it.
 */
-int HyperBinningHistogram::fill(const HyperPoint& coords){
+int HyperHistogram::fill(const HyperPoint& coords){
 
-  int binNumber = _binning.getBinNum(coords);
+  int binNumber = _binning->getBinNum(coords);
   this->fillBase(binNumber, coords.getWeight(0));
   return binNumber;
 }
@@ -166,18 +180,18 @@ int HyperBinningHistogram::fill(const HyperPoint& coords){
 /**
 Get the bin content where the given HyperPoint lies
 */
-double HyperBinningHistogram::getVal(const HyperPoint& point) const{ 
+double HyperHistogram::getVal(const HyperPoint& point) const{ 
   
-  int binNumber = _binning.getBinNum(point);
+  int binNumber = _binning->getBinNum(point);
   return this->getBinContent(binNumber);
 
 }
 
 /**
-Add a HyperPointSet to the HyperBinningHistogram - if any of
+Add a HyperPointSet to the HyperHistogram - if any of
 the HyperPoints are weighted, they will be used.
 */
-void HyperBinningHistogram::fill(const HyperPointSet& points){
+void HyperHistogram::fill(const HyperPointSet& points){
 
   for(unsigned i = 0; i < points.size(); i++){
     fill(points.at(i), points.at(i).getWeight());
@@ -189,25 +203,25 @@ void HyperBinningHistogram::fill(const HyperPointSet& points){
 /**
 Get the limits of the histogram
 */
-HyperCuboid HyperBinningHistogram::getLimits() const{
-  return _binning.getLimits();
+HyperCuboid HyperHistogram::getLimits() const{
+  return _binning->getLimits();
 }
 
 
 /**
-Merge two HyperBinningHistograms
+Merge two HyperHistograms
 */
-void HyperBinningHistogram::merge( const HistogramBase& other ){
+void HyperHistogram::merge( const HistogramBase& other ){
   
-  const HyperBinningHistogram* histOther = dynamic_cast<const HyperBinningHistogram*>(&other);
+  const HyperHistogram* histOther = dynamic_cast<const HyperHistogram*>(&other);
 
   if (histOther == 0){
-    ERROR_LOG << "The object passed to HyperBinningHistogram::merge is not of type ";
-    ERROR_LOG << "HyperBinningHistogram, so cannot merge";
+    ERROR_LOG << "The object passed to HyperHistogram::merge is not of type ";
+    ERROR_LOG << "HyperHistogram, so cannot merge";
     return;    
   }
 
-  _binning.mergeBinnings( histOther->_binning );
+  _binning->mergeBinnings( histOther->getBinning() );
   HistogramBase::merge( other );
 
   setFuncLimits( getLimits() );
@@ -217,9 +231,9 @@ void HyperBinningHistogram::merge( const HistogramBase& other ){
 /**
 Merge this histogram with another in a file
 */
-void HyperBinningHistogram::merge( TString filenameother ){
+void HyperHistogram::merge( TString filenameother ){
 
-  HyperBinningHistogram other(filenameother);
+  HyperHistogram other(filenameother);
   merge( other );
 
 }
@@ -230,12 +244,12 @@ Set the bin contents of the histogram using parsed function.
 Will set bin errors to zero and use bin centers for evaluating
 function
 */
-void HyperBinningHistogram::setContentsFromFunc(const HyperFunction& func){
+void HyperHistogram::setContentsFromFunc(const HyperFunction& func){
   
   int nbins = getNBins();
   
   for (int i = 0; i < nbins; i++){
-    HyperPoint binCenter = _binning.getBinHyperVolume(i).getAverageCenter();
+    HyperPoint binCenter = _binning->getBinHyperVolume(i).getAverageCenter();
     double funcVal = func.getVal(binCenter);
     setBinContent(i, funcVal);
     setBinError  (i, 0  );
@@ -249,11 +263,17 @@ void HyperBinningHistogram::setContentsFromFunc(const HyperFunction& func){
 
 /**
 */
-void HyperBinningHistogram::mergeBinsWithSameContent(){
+void HyperHistogram::mergeBinsWithSameContent(){
   
+  if ( _binning->getBinningType() != "HyperBinning" ){
+    ERROR_LOG << "It is only possible to merge bins when using HyperBinning. Doing nothing." << std::endl;
+    return;
+  }
   
+  const HyperBinning& hyperBinning = dynamic_cast<const HyperBinning&>( getBinning() );
+
   std::map<int, bool> volumeKept;
-  for (int i = 0; i < _binning.getNumHyperVolumes(); i++){  
+  for (int i = 0; i < hyperBinning.getNumHyperVolumes(); i++){  
     volumeKept[i] = true;
   }
   
@@ -263,16 +283,16 @@ void HyperBinningHistogram::mergeBinsWithSameContent(){
   //See if they al have the same bin content. If they do, mark them 
   //to be removed. 
 
-  for (int i = 0; i < _binning.getNumHyperVolumes(); i++){
+  for (int i = 0; i < hyperBinning.getNumHyperVolumes(); i++){
 
-    std::vector<int> linkedVols = _binning.getLinkedHyperVolumes(i);
+    std::vector<int> linkedVols = hyperBinning.getLinkedHyperVolumes(i);
     if (linkedVols.size() == 0) continue;
     
     bool linksLeadToBins = true;
 
     for (unsigned j = 0; j < linkedVols.size(); j++){
       int volNum = linkedVols.at(j);
-      if (_binning.getLinkedHyperVolumes(volNum).size() != 0){
+      if (hyperBinning.getLinkedHyperVolumes(volNum).size() != 0){
         linksLeadToBins = false;
         break;
       } 
@@ -286,7 +306,7 @@ void HyperBinningHistogram::mergeBinsWithSameContent(){
 
     for (unsigned j = 0; j < linkedVols.size(); j++){
       int volNum = linkedVols.at(j);
-      int binNum = _binning.getBinNum(volNum);
+      int binNum = hyperBinning.getBinNum(volNum);
       double binContent = getBinContent(binNum);
       if (j == 0) binCont0 = binContent;
 
@@ -313,7 +333,7 @@ void HyperBinningHistogram::mergeBinsWithSameContent(){
   std::map<int, int> oldToNewVolumeNum;
   int newVolNum = 0;  
 
-  for (int i = 0; i < _binning.getNumHyperVolumes(); i++){
+  for (int i = 0; i < hyperBinning.getNumHyperVolumes(); i++){
     bool exists = volumeKept[i];
 
     if (exists == true){
@@ -328,12 +348,12 @@ void HyperBinningHistogram::mergeBinsWithSameContent(){
   
   //Create a new HyperVolumeBinning with the bins removed
 
-  HyperVolumeBinning binningNew;
+  HyperBinning binningNew;
   
   int count = 0;
 
-  for (int i = 0; i < _binning.getNumHyperVolumes(); i++){
-    HyperVolume vol = _binning.getHyperVolume(i);
+  for (int i = 0; i < hyperBinning.getNumHyperVolumes(); i++){
+    HyperVolume vol = hyperBinning.getHyperVolume(i);
     
     int newVolNum = oldToNewVolumeNum[i];
 
@@ -345,7 +365,7 @@ void HyperBinningHistogram::mergeBinsWithSameContent(){
 
     binningNew.addHyperVolume(vol);
     
-    std::vector<int> linkedVols = _binning.getLinkedHyperVolumes( i );
+    std::vector<int> linkedVols = hyperBinning.getLinkedHyperVolumes( i );
 
     int nLinked = 0;
     for (unsigned j = 0; j < linkedVols.size(); j++){
@@ -369,7 +389,7 @@ void HyperBinningHistogram::mergeBinsWithSameContent(){
   
   
 
-  std::vector<int> primVolNums = _binning.getPrimaryVolumeNumbers();
+  std::vector<int> primVolNums = hyperBinning.getPrimaryVolumeNumbers();
   
   for (unsigned i = 0; i < primVolNums.size(); i++){
     int oldVolNum = primVolNums.at(i);
@@ -377,13 +397,13 @@ void HyperBinningHistogram::mergeBinsWithSameContent(){
     binningNew.addPrimaryVolumeNumber(newVolNum);
   }
 
-  HyperBinningHistogram newHist(binningNew);
+  HyperHistogram newHist(binningNew);
   
   newHist.setContentsFromFunc(*this);
 
-  std::cout << "You could remove at least " << _binning.getNumBins() - binningNew.getNumBins() << std::endl;
+  std::cout << "You could remove at least " << hyperBinning.getNumBins() - binningNew.getNumBins() << std::endl;
   
-  if ( _binning.getNumBins() - binningNew.getNumBins() > 0 ) newHist.mergeBinsWithSameContent();
+  if ( hyperBinning.getNumBins() - binningNew.getNumBins() > 0 ) newHist.mergeBinsWithSameContent();
 
   *this = newHist;
   
@@ -391,18 +411,18 @@ void HyperBinningHistogram::mergeBinsWithSameContent(){
 }
 
 /**
-Draw the HyperBinningHistogram - the drawing class
+Draw the HyperHistogram - the drawing class
 used depends on the dimensionality of the data.
 This just plots the raw bin contents, not the 
 frequency density.
 */
-void HyperBinningHistogram::draw(TString path){
+void HyperHistogram::draw(TString path){
   
-  if (_binning.getDimension() == 1){
+  if (_binning->getDimension() == 1){
     HyperBinningPainter1D painter(this);
     painter.draw(path);  
   }
-  else if (_binning.getDimension() == 2){
+  else if (_binning->getDimension() == 2){
 
     HyperBinningPainter2D painter(this);
     painter.draw(path);
@@ -415,17 +435,17 @@ void HyperBinningHistogram::draw(TString path){
 }
 
 /**
-Draw the frequency density of the HyperBinningHistogram 
+Draw the frequency density of the HyperHistogram 
 - the drawing class used depends on the dimensionality of the data.
 */
-void HyperBinningHistogram::drawDensity(TString path){
+void HyperHistogram::drawDensity(TString path){
   
-  if (_binning.getDimension() == 1){
+  if (_binning->getDimension() == 1){
     HyperBinningPainter1D painter(this);
     painter.useDensity(true);
     painter.draw(path);  
   }
-  else if (_binning.getDimension() == 2){
+  else if (_binning->getDimension() == 2){
     HyperBinningPainter2D painter(this);
     painter.useDensity(true);
     painter.draw(path);
@@ -441,13 +461,13 @@ void HyperBinningHistogram::drawDensity(TString path){
 
 
 /**
-Print all info about the HyperBinningHistogram
+Print all info about the HyperHistogram
 */
-void HyperBinningHistogram::printFull() const{
+void HyperHistogram::printFull() const{
 
-  for(int i = 0; i < _binning.getNumBins(); i++){
+  for(int i = 0; i < _binning->getNumBins(); i++){
     INFO_LOG << "Bin Content " << i << ": " << _binContents[i] << "      SumW2: " << _sumW2[i];
-    _binning.getBinHyperVolume(i).getHyperCuboid(0).print();
+    _binning->getBinHyperVolume(i).getHyperCuboid(0).print();
   }
 
   INFO_LOG << "Overflow: " << _binContents[_nBins] << std::endl;
@@ -458,7 +478,7 @@ void HyperBinningHistogram::printFull() const{
 /**
  \todo remember how this works
 */
-void HyperBinningHistogram::project(TH1D* histogram, const HyperCuboid& cuboid, double content, int dimension) const{
+void HyperHistogram::project(TH1D* histogram, const HyperCuboid& cuboid, double content, int dimension) const{
 
   double hyperLowEdge  = cuboid.getLowCorner() .at(dimension);
   double hyperHighEdge = cuboid.getHighCorner().at(dimension);
@@ -494,7 +514,7 @@ void HyperBinningHistogram::project(TH1D* histogram, const HyperCuboid& cuboid, 
 /**
  \todo remember how this works
 */
-void HyperBinningHistogram::project(TH1D* histogram, const HyperVolume& hyperVolume, double content, int dimension) const{
+void HyperHistogram::project(TH1D* histogram, const HyperVolume& hyperVolume, double content, int dimension) const{
 
   double volume = hyperVolume.volume();
   for(int i = 0; i < hyperVolume.size(); i++){
@@ -509,17 +529,17 @@ void HyperBinningHistogram::project(TH1D* histogram, const HyperVolume& hyperVol
 /**
  \todo remember how this works
 */
-HyperBinningHistogram HyperBinningHistogram::slice(std::vector<int> sliceDims, std::vector<double> sliceVals) const{
+HyperHistogram HyperHistogram::slice(std::vector<int> sliceDims, std::vector<double> sliceVals) const{
   
   //for (unsigned i = 0; i < sliceDims.size(); i++){
   //  std::cout << sliceDims.at(i) << "  " << sliceVals.at(i) << std::endl;
   //}
 
-  int nStartingDims = _binning.getDimension();
+  int nStartingDims = _binning->getDimension();
   int nSliceDims    = sliceDims.size();
   int nEndDims      = nStartingDims - nSliceDims;
 
-  HyperVolumeBinning temp;
+  HyperBinning temp;
   
   HyperPoint point(nStartingDims);
   for (int i = 0; i < nSliceDims; i++) point.at(sliceDims.at(i)) = sliceVals.at(i);
@@ -533,7 +553,7 @@ HyperBinningHistogram HyperBinningHistogram::slice(std::vector<int> sliceDims, s
     
     //std::cout << "Trying to slice bin " << i << " of " << getNBins() << std::endl;
 
-    HyperVolume vol       = getBinning().getBinHyperVolume(i);
+    HyperVolume vol       = _binning->getBinHyperVolume(i);
     //std::cout << "  ----- Got original HyperVolume" << std::endl;
     //vol.print();
 
@@ -551,7 +571,7 @@ HyperBinningHistogram HyperBinningHistogram::slice(std::vector<int> sliceDims, s
   
   //std::cout << "Now setting bin contents" << std::endl;
 
-  HyperBinningHistogram slicedHist(temp);
+  HyperHistogram slicedHist(temp);
 
   for (unsigned i = 0; i < binContents.size(); i++){
     slicedHist.setBinContent(i, binContents.at(i) );
@@ -571,8 +591,8 @@ HyperBinningHistogram HyperBinningHistogram::slice(std::vector<int> sliceDims, s
     }
 
     if (doesExist == false) { 
-      //std::cout << "names.at(" << count << ") = _binning.getNames().at(" << i << ")" << std::endl;
-      names.at(count) = _binning.getNames().at(i); count++; 
+      //std::cout << "names.at(" << count << ") = _binning->getNames().at(" << i << ")" << std::endl;
+      names.at(count) = _binning->getNames().at(i); count++; 
     }
   }  
 
@@ -591,7 +611,7 @@ HyperBinningHistogram HyperBinningHistogram::slice(std::vector<int> sliceDims, s
 /**
  \todo remember how this works
 */
-HyperBinningHistogram HyperBinningHistogram::slice(int dim, double val) const{
+HyperHistogram HyperHistogram::slice(int dim, double val) const{
 
   std::vector<int> sliceDims;
   std::vector<double> sliceVals;
@@ -603,7 +623,7 @@ HyperBinningHistogram HyperBinningHistogram::slice(int dim, double val) const{
 }
 
 
-void HyperBinningHistogram::draw2DSlice(TString path, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint) const{
+void HyperHistogram::draw2DSlice(TString path, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint) const{
   
   //std::cout << "draw2DSlice(" << path << ", " << sliceDimX << ", " << sliceDimY << ", " << slicePoint << ")" << std::endl;
 
@@ -617,17 +637,17 @@ void HyperBinningHistogram::draw2DSlice(TString path, int sliceDimX, int sliceDi
     _sliceVals.push_back( slicePoint.at(i) );
   }
 
-  HyperBinningHistogram sliceHist = slice( _sliceDims, _sliceVals );
+  HyperHistogram sliceHist = slice( _sliceDims, _sliceVals );
   sliceHist.draw(path);
 
 }
 
-void HyperBinningHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int sliceSetDim, int nSlices, const HyperPoint& slicePoint) const{
+void HyperHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int sliceSetDim, int nSlices, const HyperPoint& slicePoint) const{
 
   HyperPoint slicePointCp(slicePoint);
 
-  double min = getBinning().getMin(sliceSetDim);
-  double max = getBinning().getMax(sliceSetDim);
+  double min = _binning->getMin(sliceSetDim);
+  double max = _binning->getMax(sliceSetDim);
   double width = (max - min)/double(nSlices);
   
   for (int i = 0; i < nSlices; i++){
@@ -644,7 +664,7 @@ void HyperBinningHistogram::draw2DSliceSet(TString path, int sliceDimX, int slic
 
 }
 
-void HyperBinningHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint) const{
+void HyperHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint) const{
   
 
   
@@ -664,7 +684,7 @@ void HyperBinningHistogram::draw2DSliceSet(TString path, int sliceDimX, int slic
 
 }
 
-void HyperBinningHistogram::draw2DSliceSet(TString path, int nSlices, const HyperPoint& slicePoint) const{
+void HyperHistogram::draw2DSliceSet(TString path, int nSlices, const HyperPoint& slicePoint) const{
   
 
   
@@ -690,16 +710,16 @@ void HyperBinningHistogram::draw2DSliceSet(TString path, int nSlices, const Hype
 /**
  \todo remember how this works
 */
-TH1D HyperBinningHistogram::project(int dim, int bins, TString name) const{
+TH1D HyperHistogram::project(int dim, int bins, TString name) const{
   
-  double lowEdge  = _binning.getMin(dim);
-  double highEdge = _binning.getMax(dim);
+  double lowEdge  = _binning->getMin(dim);
+  double highEdge = _binning->getMax(dim);
 
   TH1D projection(name, name, bins, lowEdge, highEdge);
-  projection.GetXaxis()->SetTitle(_binning.getNames().at(dim));
+  projection.GetXaxis()->SetTitle(_binning->getNames().at(dim));
 
-  for(int i = 0; i < _binning.getNumBins(); i++){
-    project(&projection, _binning.getBinHyperVolume(i), this->getBinContent(i), dim);
+  for(int i = 0; i < _binning->getNumBins(); i++){
+    project(&projection, _binning->getBinHyperVolume(i), this->getBinContent(i), dim);
   }
   
   for (int i = 1; i <= projection.GetNbinsX(); i++){
@@ -713,7 +733,7 @@ TH1D HyperBinningHistogram::project(int dim, int bins, TString name) const{
 /**
  \todo remember how this works
 */
-void HyperBinningHistogram::drawProjection(TString path, int dim, int bins) const{
+void HyperHistogram::drawProjection(TString path, int dim, int bins) const{
   
   TH1D projection = project(dim, bins);
   RootPlotter1D plotter(&projection, 300, 300);
@@ -725,9 +745,9 @@ void HyperBinningHistogram::drawProjection(TString path, int dim, int bins) cons
 /**
  \todo remember how this works
 */
-void HyperBinningHistogram::drawAllProjections(TString path, int bins) const{
+void HyperHistogram::drawAllProjections(TString path, int bins) const{
 
-  for(int i = 0; i < _binning.getDimension(); i++){
+  for(int i = 0; i < _binning->getDimension(); i++){
     TString thisPath = path + "_"; thisPath += i;
     drawProjection(thisPath, i, bins);
   }
@@ -737,7 +757,7 @@ void HyperBinningHistogram::drawAllProjections(TString path, int bins) const{
 /**
  \todo remember how this works
 */
-void HyperBinningHistogram::compareProjection    (TString path, int dim, const HyperBinningHistogram& other, int bins) const{
+void HyperHistogram::compareProjection    (TString path, int dim, const HyperHistogram& other, int bins) const{
   TH1D projection      = project(dim, bins);
   TH1D projectionOther = other.project(dim, bins, "projection2");
   RootPlotter1D plotter(&projection, 300, 300);
@@ -749,29 +769,29 @@ void HyperBinningHistogram::compareProjection    (TString path, int dim, const H
 /**
  \todo remember how this works
 */
-void HyperBinningHistogram::compareAllProjections(TString path, const HyperBinningHistogram& other, int bins) const{
-  for(int i = 0; i < _binning.getDimension(); i++){
+void HyperHistogram::compareAllProjections(TString path, const HyperHistogram& other, int bins) const{
+  for(int i = 0; i < _binning->getDimension(); i++){
     TString thisPath = path + "_"; thisPath += i;
     compareProjection(thisPath, i, other, bins);
   }  
 }
 
 /**
-Save the HyperBinningHistogram to a TFile
+Save the HyperHistogram to a TFile
 */
-void HyperBinningHistogram::save(TString filename){
+void HyperHistogram::save(TString filename){
 
   TFile* file = new TFile(filename, "RECREATE");
 
   if (file == 0){
-    ERROR_LOG << "Could not open TFile in HyperBinningHistogram::save(" << filename << ")";
+    ERROR_LOG << "Could not open TFile in HyperHistogram::save(" << filename << ")";
     return;
   }
 
   //save the bin contents
   this->saveBase();
   //save the binning
-  _binning.save();
+  _binning->save();
 
   file->Write();
   file->Close();
@@ -779,26 +799,33 @@ void HyperBinningHistogram::save(TString filename){
 }
 
 /**
-Save the HyperBinningHistogram to a .txt file
+Save the HyperHistogram to a .txt file
 */
-void HyperBinningHistogram::saveToTxtFile(TString filename) const{
+void HyperHistogram::saveToTxtFile(TString filename) const{
   
-  int nVolumes = _binning.getNumHyperVolumes();
+  if ( _binning->getBinningType() != "HyperBinning" ){
+    ERROR_LOG << "It is only possible to saveToTxtFile when using HyperBinning. Doing nothing." << std::endl;
+    return;
+  }
+  
+  const HyperBinning& hyperBinning = dynamic_cast<const HyperBinning&>( getBinning() );
+
+  int nVolumes = hyperBinning.getNumHyperVolumes();
   
   std::ofstream myfile;
   myfile.open (filename);
 
   for (int i = 0; i < nVolumes; i++ ){
-    HyperVolume vol  = _binning.getHyperVolume(i);
+    HyperVolume vol  = hyperBinning.getHyperVolume(i);
     HyperCuboid cube = vol.getHyperCuboid(0);
-    int binNumber = _binning.getBinNum(i); 
+    int binNumber = hyperBinning.getBinNum(i); 
     double content = -1.0;
     double error   = -1.0;
 
-    bool isPrimary = _binning.isPrimaryVolume(i);
+    bool isPrimary = hyperBinning.isPrimaryVolume(i);
     bool isBin     = false;
     
-    std::vector<int> linkedBins = _binning.getLinkedHyperVolumes(i);
+    std::vector<int> linkedBins = hyperBinning.getLinkedHyperVolumes(i);
 
     if (binNumber != -1){
       content = getBinContent(binNumber);
@@ -833,16 +860,46 @@ void HyperBinningHistogram::saveToTxtFile(TString filename) const{
 
 }
 
+/**
+Get binning type from file
+*/
+TString HyperHistogram::getBinningType(TString filename){
 
+  TFile* file = new TFile(filename, "READ");
+
+  if (file == 0){
+    ERROR_LOG << "Could not open TFile in HyperBinning::load(" << filename << ")";
+    return "";
+  }
+
+  TTree* tree = (TTree*)file->Get("HyperBinning");
+
+  if (tree != 0){
+    file->Close();
+    return "HyperBinning";
+  }
+
+  file->Close();
+  return "";
+
+}
 
 /**
-Load the HyperBinningHistogram from a TFile
+Load the HyperHistogram from a TFile
 */
-void HyperBinningHistogram::load(TString filename){
+void HyperHistogram::load(TString filename){
 
-  //save the binning
-  _binning.load(filename);
-  //save the bin contents
+  //If loading from a file, we first need to figure out what 
+  //type of binning is saved in that file. 
+  
+  TString binningType = getBinningType(filename);
+  if (binningType == "HyperBinning"){
+    _binning = new HyperBinning();
+  }
+  if (binningType == ""){
+    ERROR_LOG << "I could not find any binning scheme in this file" << std::endl;
+  }
+  _binning->load(filename);
   this->loadBase(filename);
 
 }
@@ -850,20 +907,20 @@ void HyperBinningHistogram::load(TString filename){
 /**
 Get the volume of a HyperVolume bin
 */
-double HyperBinningHistogram::getBinVolume(int bin) const{
-  return _binning.getBinHyperVolume(bin).volume();
+double HyperHistogram::getBinVolume(int bin) const{
+  return _binning->getBinHyperVolume(bin).volume();
 }
 
 /**
 Destructor
 */
-HyperBinningHistogram::~HyperBinningHistogram(){
-  GOODBYE_LOG << "Goodbye from the HyperBinningHistogram() Constructor"; 
+HyperHistogram::~HyperHistogram(){
+  GOODBYE_LOG << "Goodbye from the HyperHistogram() Constructor"; 
 }
 
 
 /*
-void HyperBinningHistogram::printOptimisationStatistics(){
+void HyperHistogram::printOptimisationStatistics(){
 
   INFO_LOG << "With no optimisation we would perform " << _nIntegrationsWOtrick << " integrations";
   INFO_LOG << "In fact we only performed " << _nIntegrationsWtrick << " integrations";
@@ -871,16 +928,16 @@ void HyperBinningHistogram::printOptimisationStatistics(){
 
 }
 
-HyperPoint HyperBinningHistogram::findAdaptiveSigma(const HyperPoint& point, const HyperPoint& sigmas) const{
+HyperPoint HyperHistogram::findAdaptiveSigma(const HyperPoint& point, const HyperPoint& sigmas) const{
   
-  int nBins = getBinning().getNumBins();
-  int dim   = getBinning().getDimension();
+  int nBins = _binning->getNumBins();
+  int dim   = _binning->getDimension();
 
   HyperPoint binWidthSum(dim, 0.0);
   double     weightSum = 0.0;
   
   HyperPointSet points = makePointsAtGaussianExtremes(point, sigmas, 3.0);
-  std::vector<int> binNumbers = getBinning().getBinNumsContainingPoints(points);
+  std::vector<int> binNumbers = _binning->getBinNumsContainingPoints(points);
   int nSelectedBins = binNumbers.size();
   
   _nIntegrationsWtrick  += nSelectedBins;
@@ -890,7 +947,7 @@ HyperPoint HyperBinningHistogram::findAdaptiveSigma(const HyperPoint& point, con
   for (int i = 0; i < nSelectedBins; i++){
     double integral = intgrateGaussianOverBin(point, sigmas, binNumbers.at(i));
     HyperPoint width(dim, 0.0);
-    for (int j = 0; j < dim; j++) width.at(j) = getBinning().getBinHyperVolume(binNumbers.at(i)).getMax(j) - getBinning().getBinHyperVolume(binNumbers.at(i)).getMin(j);
+    for (int j = 0; j < dim; j++) width.at(j) = _binning->getBinHyperVolume(binNumbers.at(i)).getMax(j) - _binning->getBinHyperVolume(binNumbers.at(i)).getMin(j);
     width = width*integral;
     binWidthSum = binWidthSum + width;
     weightSum   += integral;
@@ -905,12 +962,12 @@ HyperPoint HyperBinningHistogram::findAdaptiveSigma(const HyperPoint& point, con
 
 }
 
-double HyperBinningHistogram::adaptiveGaussianKernal(const HyperPoint& point, double smoothing ) const{
+double HyperHistogram::adaptiveGaussianKernal(const HyperPoint& point, double smoothing ) const{
   
   int dim = point.getDimension();
   
   double dimensionalityScale = pow(1.4, dim) - 1.0;
-  HyperPoint initalSigma = getBinning().getAverageBinWidth()*(1.0/dimensionalityScale);
+  HyperPoint initalSigma = _binning->getAverageBinWidth()*(1.0/dimensionalityScale);
   
   //initalSigma.print();
 
@@ -925,7 +982,7 @@ double HyperBinningHistogram::adaptiveGaussianKernal(const HyperPoint& point, do
 }
 
 
-double HyperBinningHistogram::intgrateGaussianOverHyperCuboid(const HyperPoint& mean, const HyperPoint& sigmas, const HyperCuboid& cuboid) const{
+double HyperHistogram::intgrateGaussianOverHyperCuboid(const HyperPoint& mean, const HyperPoint& sigmas, const HyperCuboid& cuboid) const{
   
   double multiInt = 1.0;
 
@@ -953,7 +1010,7 @@ double HyperBinningHistogram::intgrateGaussianOverHyperCuboid(const HyperPoint& 
 
 }
 
-double HyperBinningHistogram::intgrateGaussianOverHyperVolume(const HyperPoint& point, const HyperPoint& sigmas, const HyperVolume& volume) const{
+double HyperHistogram::intgrateGaussianOverHyperVolume(const HyperPoint& point, const HyperPoint& sigmas, const HyperVolume& volume) const{
   
   double nCuboids = volume.getHyperCuboids().size();
   
@@ -967,20 +1024,20 @@ double HyperBinningHistogram::intgrateGaussianOverHyperVolume(const HyperPoint& 
 
 }
 
-double HyperBinningHistogram::intgrateGaussianOverBin(const HyperPoint& point, const HyperPoint& sigmas, int bin) const{
+double HyperHistogram::intgrateGaussianOverBin(const HyperPoint& point, const HyperPoint& sigmas, int bin) const{
   
-  return intgrateGaussianOverHyperVolume( point, sigmas, getBinning().getBinHyperVolume(bin) );
+  return intgrateGaussianOverHyperVolume( point, sigmas, _binning->getBinHyperVolume(bin) );
 }
 
-HyperPointSet HyperBinningHistogram::makePointsAtGaussianExtremes(const HyperPoint& mean, const HyperPoint& widths, double numSigma) const{
+HyperPointSet HyperHistogram::makePointsAtGaussianExtremes(const HyperPoint& mean, const HyperPoint& widths, double numSigma) const{
   
   int dim =  mean.getDimension();
   HyperPointSet points(dim);
 
   for (int i = 0; i < dim; i++){
 
-    double max = getBinning().getMax(i);
-    double min = getBinning().getMin(i);
+    double max = _binning->getMax(i);
+    double min = _binning->getMin(i);
     
     double sigma = widths.at(i);
 
@@ -1000,12 +1057,12 @@ HyperPointSet HyperBinningHistogram::makePointsAtGaussianExtremes(const HyperPoi
 
 }
 
-double HyperBinningHistogram::gaussianKernal(const HyperPoint& point, const HyperPoint& sigmas) const{
+double HyperHistogram::gaussianKernal(const HyperPoint& point, const HyperPoint& sigmas) const{
   
-  int nBins = getBinning().getNumBins();
+  int nBins = _binning->getNumBins();
   
   HyperPointSet points = makePointsAtGaussianExtremes(point, sigmas, 3.0);
-  std::vector<int> binNumbers = getBinning().getBinNumsContainingPoints(points);
+  std::vector<int> binNumbers = _binning->getBinNumsContainingPoints(points);
   int nSelectedBins = binNumbers.size();
   
   _nIntegrationsWtrick  += nSelectedBins;
@@ -1031,9 +1088,9 @@ double HyperBinningHistogram::gaussianKernal(const HyperPoint& point, const Hype
 
 }
 
-std::vector<int> HyperBinningHistogram::findNHighestContributingKernalBins(const HyperPoint& point, const HyperPoint& sigmas, int n) const{
+std::vector<int> HyperHistogram::findNHighestContributingKernalBins(const HyperPoint& point, const HyperPoint& sigmas, int n) const{
   
-  int nBins = getBinning().getNumBins();
+  int nBins = _binning->getNumBins();
 
   double* integrals = new double [nBins];
   int   * index     = new int    [nBins];
@@ -1059,7 +1116,7 @@ std::vector<int> HyperBinningHistogram::findNHighestContributingKernalBins(const
 
 }
 
-void HyperBinningHistogram::reweightDatasetWithAdaptiveGaussianKernal(HyperPointSet& points, double smoothing) const{
+void HyperHistogram::reweightDatasetWithAdaptiveGaussianKernal(HyperPointSet& points, double smoothing) const{
 
   int npoints = points.size();
 

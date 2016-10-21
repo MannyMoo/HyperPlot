@@ -1,6 +1,6 @@
 #include "LHCbStyle.h"
 
-#include "HyperBinningHistogram.h"
+#include "HyperHistogram.h"
 #include "LHCbStyle.h"
 
 #include <iostream>
@@ -132,7 +132,7 @@ TString GetDataBinningDir(int dim ){
 void DrawHistogramSlices(TString filename, TString outdir, int nSlicesPerSet = 50){
   
   //Load histogram from file
-  HyperBinningHistogram hist(filename);
+  HyperHistogram hist(filename);
   
   //take the slice point to be the center of the limits
   HyperPoint slicePoint = hist.getLimits().getCenter();
@@ -188,7 +188,7 @@ void DataBinningExample(int dim){
   //Create a histogram with the SMART algorithm using dataset1. This keeps splitting bins
   //so that each of the resulting bins has ~50% of the events. 
   
-  HyperBinningHistogram hist1(limits, points1, 
+  HyperHistogram hist1(limits, points1, 
 
     /*** Name of the binning algorithm you want to use     */
     HyperBinningAlgorithms::SMART_MULTI, 
@@ -242,7 +242,7 @@ void DataBinningExample(int dim){
 
   //Make a histogram with the same binning and fill it with dataset2
 
-  HyperBinningHistogram hist2( hist1.getBinning() );
+  HyperHistogram hist2( hist1.getBinning() );
   hist2.setNames(name);
   hist2.fill(points2); 
   hist2.save(outputdir + "Histogram2.root");     
@@ -264,7 +264,7 @@ void DataBinningExample(int dim){
 
   //Draw the binning - this doesn't really work at the moment
   
-  hist2.getBinning().drawBinning(outputdir + "Binning");
+  //hist2.getBinning().drawBinning(outputdir + "Binning");
   
   //Find the chi2 between the datasets 
   
@@ -302,7 +302,7 @@ void FunctionBinningExample(int dim, int functionNum, int nbinpairs){
 
   //Create a histogram with the FUNC_PHASE algorithm, based on the HyperFunction phaseMotion.
 
-  HyperBinningHistogram hist(limits, points, HyperBinningAlgorithms::FUNC_PHASE,
+  HyperHistogram hist(limits, points, HyperBinningAlgorithms::FUNC_PHASE,
 
     /***  The minimum number of events allowed in each bin */
     /***  from the HyperPointSet provided (points)         */   

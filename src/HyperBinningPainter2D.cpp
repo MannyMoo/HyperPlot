@@ -3,7 +3,7 @@
 /** Construct a 2D HyperBinningPainter for a given HyperVolumeBinning and HyperPointSet.
 This option will draw the HyperPointSet as dots over the binning scheme
 */
-HyperBinningPainter2D::HyperBinningPainter2D(HyperVolumeBinning* binning, HyperPointSet* hyperPoints) :
+HyperBinningPainter2D::HyperBinningPainter2D(BinningBase* binning, HyperPointSet* hyperPoints) :
   HyperBinningPainter(0),
   _binning(binning),
   _hyperPoints(hyperPoints)
@@ -20,7 +20,7 @@ HyperBinningPainter2D::HyperBinningPainter2D(HyperVolumeBinning* binning, HyperP
 }
 
 /** Construct a 2D HyperBinningPainter for a given HyperBinningHistogram */
-HyperBinningPainter2D::HyperBinningPainter2D(HyperBinningHistogram* histogram) :
+HyperBinningPainter2D::HyperBinningPainter2D(HyperHistogram* histogram) :
   HyperBinningPainter(histogram),
   _binning(0),
   _hyperPoints(0)
@@ -32,7 +32,7 @@ HyperBinningPainter2D::HyperBinningPainter2D(HyperBinningHistogram* histogram) :
 }
 
 /** get the binning  (works for either constructor) */
-const HyperVolumeBinning& HyperBinningPainter2D::getBinning(){
+const BinningBase& HyperBinningPainter2D::getBinning(){
   
   if (_binning != 0) return *_binning;
   return _histogram->getBinning();

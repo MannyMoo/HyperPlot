@@ -1,7 +1,7 @@
 #include "HyperBinningPainter1D.h"
 
 /** Construct a 1D HyperBinningPainter for a given HyperBinningHistogram */
-HyperBinningPainter1D::HyperBinningPainter1D(HyperBinningHistogram* histogram) :
+HyperBinningPainter1D::HyperBinningPainter1D(HyperHistogram* histogram) :
   HyperBinningPainter(histogram)
 {
   WELCOME_LOG << "Good day from the HyperBinningPainter1D() Constructor";  

@@ -13,7 +13,6 @@
 
 // HyperPlot includes
 #include "MessageService.h"
-#include "HyperBinningHistogram.h"
 #include "RootPlotter1D.h"
 #include "RootPlotter2D.h"
 #include "HyperBinningPainter.h"
@@ -31,7 +30,7 @@ class HyperBinningPainter2D : public HyperBinningPainter {
 
   private:
   
-  HyperVolumeBinning* _binning; 
+  BinningBase* _binning; 
   /**< This gets filled in an alternate constructor (usually the HyperBinningHistogram
   get taken from the inhereted HyperBinningPainter class). This allows a HyperPointSet
   to be plotted on top of the HyperVolumeBinning */ 
@@ -40,7 +39,7 @@ class HyperBinningPainter2D : public HyperBinningPainter {
   get taken from the inhereted HyperBinningPainter class). This allows a HyperPointSet
   to be plotted on top of the HyperVolumeBinning */ 
 
-  const HyperVolumeBinning& getBinning();
+  const BinningBase& getBinning();
 
   int getFillColour(double binContents);
   
@@ -60,8 +59,8 @@ class HyperBinningPainter2D : public HyperBinningPainter {
 
   public:
 
-  HyperBinningPainter2D(HyperVolumeBinning* binning, HyperPointSet* hyperPoints = 0);
-  HyperBinningPainter2D(HyperBinningHistogram* histogram);
+  HyperBinningPainter2D(BinningBase* binning, HyperPointSet* hyperPoints = 0);
+  HyperBinningPainter2D(HyperHistogram* histogram);
 
   virtual void draw(TString path = "");
 

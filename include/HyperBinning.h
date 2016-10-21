@@ -3,12 +3,12 @@
  * Author: Sam Harnew, sam.harnew@gmail.com ,
  * Date: Dec 2015
  *
- * HyperVolumeBinning is a binning scheme where each bin volume is 
+ * HyperBinning is a binning scheme where each bin volume is 
  * defined by a HyperVolume.
  *
  **/
 
-/** \class HyperVolumeBinning
+/** \class HyperBinning
 
 Finding the correct bin number is quite a compuationally
 slow process if one has to loop over every bin and
@@ -52,8 +52,8 @@ The
 
 
  
-#ifndef HYPERVOLUMEBINNING_HH
-#define HYPERVOLUMEBINNING_HH
+#ifndef HYPERBINNING_HH
+#define HYPERBINNING_HH
 
 // HyperPlot includes
 #include "MessageService.h"
@@ -64,6 +64,7 @@ The
 #include "RootPlotter1D.h"
 #include "RootPlotter2D.h"
 #include "HyperName.h"
+#include "BinningBase.h"
 
 
 // Root includes
@@ -76,7 +77,7 @@ The
 #include <algorithm>
 #include <sstream>
 
-class HyperVolumeBinning {
+class HyperBinning : public BinningBase {
 
   private:
 
@@ -86,8 +87,6 @@ class HyperVolumeBinning {
   
   int followBinLinks(const HyperPoint& coords, int binNumber) const; 
 
-  int _dimension;	/**< dimensionality of the binning */
-  
   mutable bool _changed; 
   /**< 
     keep a record to check if the binning changes -
@@ -102,11 +101,6 @@ class HyperVolumeBinning {
   is calculated once, and reused. */
 
   protected:
-
-  HyperName     _names;
-  /**< 
-    Possible to assign names to each dimension, which will be used for plotting etc
-  */  
 
   std::vector< HyperVolume      > _hyperVolumes;
   /**< 
@@ -223,34 +217,26 @@ class HyperVolumeBinning {
     ~~~
   */
 
-
   void updateCash() const; 
   void updateBinNumbering() const; 
   void updateAverageBinWidth() const;
   void updateMinMax() const;
   
+  protected:
+
   void setDimension(int dim);
 
   public:
   
-  HyperVolumeBinning();
-
-  //for loading and saving to TFiles
-  void load(TString filename);
-  void save(TString filename) const;
-  void save() const; 
+  HyperBinning();
   
-  int getDimension(TTree* tree);
+  int getHyperBinningDimFromTree(TTree* tree);
 
   bool isPrimaryVolume(int volumeNumber) const;
 
   void savePrimaryVolumeNumbers() const;
   void loadPrimaryVolumeNumbers(TFile* file);
 
-
-  void setNames( HyperName names ){ _names = names; }  /**< set the a name  for each dimension */
-  HyperName getNames() const{return _names;}           /**< get the a names for each dimension */
-  
   //Used for getting between the bin number and HyperVolume numbers
   int getHyperVolumeNumber(int binNumber) const;
   int getBinNum(int volumeNumber) const;
@@ -258,44 +244,36 @@ class HyperVolumeBinning {
   void addPrimaryVolumeNumber(int volumeNumber);
 
   int getNumHyperVolumes() const;  
-  int getNumBins() const;
   
-  int getBinNum(const HyperPoint& coords) const;
-
-  const int& getDimension () const {return _dimension;}  /**< get the dimensionality of the binning */
-
   const HyperVolume& getHyperVolume(int volumeNumber) const{return _hyperVolumes.at(volumeNumber);} /**< get one of the HyperVolumes */
-  const HyperVolume& getBinHyperVolume(int binNumber) const;
 
   bool addHyperVolume(const HyperVolume& hyperVolume);
   bool addHyperVolumeLink(int volumeNum, int linkedVolumeNum);
-
-  void mergeBinnings( const HyperVolumeBinning& other );
-
-  HyperPoint getAverageBinWidth() const;
-
-  void drawBin(int dim, int bin, RootPlotter2D& plotter) const;
-  void drawBinning(int dim, TString name, TPad* pad = 0, double upperMargin = 0.2, double lowerMargin = 0.2) const;
-  void drawBinning(TString name, TPad* pad = 0) const;
-
-  double getMin(int dimension) const;
-  double getMax(int dimension) const;
-  
-  HyperCuboid getLimits() const;
 
   std::vector<int> getLinkedHyperVolumes( int volumeNumber ) const;
 
   std::vector<int> getPrimaryVolumeNumbers() const;
 
-  std::vector<int> findOrderedBinsOnLine( const HyperPoint& point, int dim ) const;
-  bool isLineInVolume( const HyperVolume& volume, const HyperPoint& point, int dim ) const;
-  bool isLineInCuboid( const HyperCuboid& cuboid, const HyperPoint& point, int dim ) const;
+  ~HyperBinning();
 
-  std::vector<int> findNNearestBins( const HyperPoint& point, int n ) const;
-  
-  //void print() const;
+  //Functions we are required to implement from BinningBase
 
-  ~HyperVolumeBinning();
+  virtual void load(TString filename);
+  virtual void save(TString filename) const;
+  virtual void save() const; 
+
+  virtual int getNumBins() const;
+  virtual int getBinNum(const HyperPoint& coords) const;
+
+  virtual HyperVolume getBinHyperVolume(int binNumber) const;
+
+  virtual void mergeBinnings( const BinningBase& other );
+
+  virtual HyperPoint  getAverageBinWidth() const;
+  virtual HyperCuboid getLimits()          const;
+
+  virtual BinningBase* clone() const;
+
 
 };
 

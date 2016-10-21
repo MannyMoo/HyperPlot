@@ -1,26 +1,24 @@
-#include "HyperVolumeBinning.h"
+#include "HyperBinning.h"
 
 
 ///The only constructor
-HyperVolumeBinning::HyperVolumeBinning() :
-  _dimension(0),
+HyperBinning::HyperBinning() :
   _changed(true),
-  _averageBinWidth(_dimension),
-  _minmax( HyperPoint(_dimension), HyperPoint(_dimension) ),
-  _names(_dimension)
+  _averageBinWidth(getDimension()),
+  _minmax( HyperPoint(getDimension()), HyperPoint(getDimension()) )
 {
-  WELCOME_LOG << "Hello from the HyperVolumeBinning() Constructor";
+  setBinningType("HyperBinning");
+  WELCOME_LOG << "Hello from the HyperBinning() Constructor";
 }
 
-///Set the dimension of the HyperVolumeBinning. This can only be 
+///Set the dimension of the HyperBinning. This can only be 
 ///called once, when it is known what dimesnion it is.
-void HyperVolumeBinning::setDimension(int dim){
+void HyperBinning::setDimension(int dim){
   
-  if (_dimension == 0){
-    _dimension = dim;
-    _averageBinWidth = HyperPoint (_dimension, 1.0);
-    _minmax          = HyperCuboid( HyperPoint(_dimension, 0.0), HyperPoint(_dimension, 1.0) );
-    _names           = HyperName  (_dimension);
+  if (getDimension() == 0){
+    BinningBase::setDimension(dim);
+    _averageBinWidth = HyperPoint ( getDimension(), 1.0);
+    _minmax          = HyperCuboid( getDimension(), 0.0, 1.0 );
   }
 
 }
@@ -59,7 +57,7 @@ void HyperVolumeBinning::setDimension(int dim){
     
     ~~~
 */
-int HyperVolumeBinning::getBinNum(const HyperPoint& coords) const{
+int HyperBinning::getBinNum(const HyperPoint& coords) const{
   
   if (_changed == true) updateCash();
 
@@ -115,17 +113,24 @@ int HyperVolumeBinning::getBinNum(const HyperPoint& coords) const{
 
 /// This function will merge the two binnings. It assumes that the first
 ///
-void HyperVolumeBinning::mergeBinnings( const HyperVolumeBinning& other ){
+void HyperBinning::mergeBinnings( const BinningBase& other ){
+  
+  if (isSameBinningType(other) == false){
+    ERROR_LOG << "You cannot merge a HyperBinning with a " << other.getBinningType() << std::endl;
+    return;
+  }
+  
+  const HyperBinning& otherHyperBinning = dynamic_cast<const HyperBinning&>(other);
 
   int nVolumes      = getNumHyperVolumes();
-  int nVolumesOther = other.getNumHyperVolumes();
+  int nVolumesOther = otherHyperBinning.getNumHyperVolumes();
 
-  //this means every volume number in 'other' needs to be increased by nVolumes.
+  //this means every volume number in 'otherHyperBinning' needs to be increased by nVolumes.
   //This is important for linked bins and primary volume numbers!!
 
   for (int i = 0; i < nVolumesOther; i++){
-    _hyperVolumes.push_back( other._hyperVolumes.at(i) );
-    std::vector<int> linkedVolumes = other._linkedHyperVolumes.at(i);
+    _hyperVolumes.push_back( otherHyperBinning._hyperVolumes.at(i) );
+    std::vector<int> linkedVolumes = otherHyperBinning._linkedHyperVolumes.at(i);
 
     for (unsigned int j = 0; j < linkedVolumes.size(); j++){
       linkedVolumes.at(j) += nVolumes;
@@ -134,10 +139,10 @@ void HyperVolumeBinning::mergeBinnings( const HyperVolumeBinning& other ){
     _linkedHyperVolumes.push_back(linkedVolumes);
   }
   
-  int nPrimaryBinsOther = other._primaryVolumeNumbers.size();
+  int nPrimaryBinsOther = otherHyperBinning._primaryVolumeNumbers.size();
 
   for (int i = 0; i < nPrimaryBinsOther; i++){
-    int primaryVolumeNumber = other._primaryVolumeNumbers.at(i);
+    int primaryVolumeNumber = otherHyperBinning._primaryVolumeNumbers.at(i);
     primaryVolumeNumber += nVolumes;
     _primaryVolumeNumbers.push_back(primaryVolumeNumber);
   }
@@ -146,14 +151,22 @@ void HyperVolumeBinning::mergeBinnings( const HyperVolumeBinning& other ){
 
 }
 
-std::vector<int> HyperVolumeBinning::getLinkedHyperVolumes( int volumeNumber ) const{
+std::vector<int> HyperBinning::getLinkedHyperVolumes( int volumeNumber ) const{
 
   return _linkedHyperVolumes.at(volumeNumber);
 
 }
 
 
-bool HyperVolumeBinning::isPrimaryVolume(int volumeNumber) const{
+BinningBase* HyperBinning::clone() const{
+
+  return dynamic_cast<BinningBase*>(new HyperBinning(*this));
+
+}
+
+
+
+bool HyperBinning::isPrimaryVolume(int volumeNumber) const{
 
   for (unsigned i = 0; i < _primaryVolumeNumbers.size(); i++){
     if (_primaryVolumeNumbers.at(i) == volumeNumber) return true;
@@ -165,128 +178,9 @@ bool HyperVolumeBinning::isPrimaryVolume(int volumeNumber) const{
 
 
 
-
-/// \todo This doesn't really work yet
-///
-void HyperVolumeBinning::drawBin(int dim, int bin, RootPlotter2D& plotter) const{
-
-  double min = getBinHyperVolume(bin).getHyperCuboid(0).getLowCorner() .at(dim); 
-  double max = getBinHyperVolume(bin).getHyperCuboid(0).getHighCorner().at(dim); 
-
-  TLine* line = new TLine( bin , min, bin, max );
-
-  double nBins  = this->getNumBins();
-  double lineWidth = (50.0/nBins)*8.0;
-  
-  if ( lineWidth > 10.0 ) lineWidth = 10.0;
-
-  line->SetLineWidth(lineWidth);
-
-  plotter.addObject(line);
-
-}
-
-/// \todo This doesn't really work yet
-///
-void HyperVolumeBinning::drawBinning(int dim, TString name, TPad* pad, double upperMargin, double lowerMargin) const{
-  
-  int nBins  = this->getNumBins();
-  double min = this->getMin(dim);
-  double max = this->getMax(dim);
-  
-  int extra = ceil(nBins*0.05);
-  double extraD = (max - min)*0.05;
-  
-  TString uniqueName = "histBinningDim"; uniqueName += dim;
-  TString axisTitle = "dim "; axisTitle += dim;
-
-  TH2D* hist = new TH2D(uniqueName, uniqueName, nBins + extra*2.0, -extra, (double)nBins - 1 + extra, 10, min - extraD, max + extraD);
-  
-  hist->GetYaxis()->CenterTitle();
-  //hist->GetXaxis()->CenterTitle();
-
-  hist->GetXaxis()->SetTitle("Bin Number");
-  hist->GetYaxis()->SetTitle("dim");
-
-  RootPlotter2D plotter(hist);
-  
-  plotter.scaleTextSize(2.0);
-
-  plotter.setBMargin(lowerMargin);
-  plotter.setTMargin(upperMargin);
-  plotter.setYAxisTitleOffset(0.4);
-
-  for (int i = 0; i < nBins; i++) drawBin(dim, i, plotter);
-
-  double usualMargins = 0.78;
-  double margins = 1.0 - upperMargin - lowerMargin;
-
-  double scale = margins/usualMargins;
-  scale *= 0.9;
-
-  plotter.plot(name, "", pad, scale );  
-
-  delete hist;  
-
-}
-
-/// \todo This doesn't really work yet
-///
-void HyperVolumeBinning::drawBinning(TString name, TPad* pad) const{
-
-  int nDim = this->getDimension();
-
-  double indivPadHeight = 80.0; 
-  double extraPadHegiht = 30.0; //for bottom and top pad with axis
-  
-  double marginFrac = extraPadHegiht/(extraPadHegiht+indivPadHeight);
-
-  double canvasheight = indivPadHeight*nDim + 2.0*extraPadHegiht;
-  
-  
-  TPad* canvas = 0;
-
-  if (pad == 0) canvas = new TCanvas("canvas", "canvas",400, canvasheight);
-  else canvas = pad;
-
-
-
-  double extraPadFrac = extraPadHegiht / canvasheight;
-  double indivPadFrac = indivPadHeight / canvasheight;
-
- 
-  
-  double lower = 0.01;
-  double upper = extraPadFrac + indivPadFrac;
-
-  for(int i = nDim - 1; i >= 0; i--){
-
-    TString uniquePadName = name;  uniquePadName += i;
-    canvas->cd();
-    TPad* pad = new TPad(uniquePadName, uniquePadName, 0.01, lower, 0.99, upper);
-    
-    lower = upper;
-    upper += indivPadFrac;
-    if (i == 0) upper = 0.99;
-
-    double upMargin = 0.01; 
-    double loMargin = 0.01; 
-    if (i == 0       ) upMargin = marginFrac;
-    if (i == nDim - 1) loMargin = marginFrac;
-
-    drawBinning(i, "", pad ,upMargin, loMargin);
-    canvas->cd();
-    pad->Draw();
-  }
-  
-  //if (name == "") canvas->Draw();
-  if (name != "") canvas->Print(name + Plotter::s_imageformat);
-
-}
-
 ///Add a primary volume number
 ///
-void HyperVolumeBinning::addPrimaryVolumeNumber(int volumeNumber){
+void HyperBinning::addPrimaryVolumeNumber(int volumeNumber){
   _primaryVolumeNumbers.push_back(volumeNumber);
 }
 
@@ -295,7 +189,7 @@ void HyperVolumeBinning::addPrimaryVolumeNumber(int volumeNumber){
 ///HyperVolume (that has links) that the HyperPoint falls into. 
 ///
 ///
-int HyperVolumeBinning::followBinLinks(const HyperPoint& coords, int motherVolumeNumber) const{
+int HyperBinning::followBinLinks(const HyperPoint& coords, int motherVolumeNumber) const{
   
   //find the linked volumes
   const std::vector<int>& linkedVolumes = _linkedHyperVolumes.at(motherVolumeNumber);
@@ -324,117 +218,10 @@ int HyperVolumeBinning::followBinLinks(const HyperPoint& coords, int motherVolum
 }
 
 
-///Look at the distance between the given HyperPoint and the 'AverageCenter' (or CenterOfMass)
-///of all the HyperVolume bins. Return the n that are closest.
-///
-std::vector<int> HyperVolumeBinning::findNNearestBins( const HyperPoint& point, int n ) const{
-
-  int        * arrHyperVol = new int    [getNumBins()];
-  double     * arrDist     = new double [getNumBins()];  
-  int        * arrIndex    = new int    [getNumBins()]; 
-
-  int count = 0;
-
-  for (unsigned int i = 0; i < _hyperVolumes.size(); i++){
-    if ( getBinNum(i) == -1 ) continue;
-    HyperPoint center = _hyperVolumes.at(i).getAverageCenter();
-    double dist = center.distanceTo(point);
-    arrHyperVol[count] = i;
-    arrDist    [count] = dist;
-    count++;
-  }
-
-  TMath::Sort( getNumBins(), arrDist, arrIndex, false);
-
-  std::vector<int> nearest;
-  for (int i = 0; i < n; i++){
-    nearest.push_back( arrHyperVol[ arrIndex[i] ] );
-    //std::cout << "   " << arrHyperVol[ arrIndex[i] ] << "     " << getBinNum( arrHyperVol[ arrIndex[i] ] ) << std::endl;
-  }
-
-  delete arrIndex;
-  delete arrDist;
-
-  return nearest;
-
-}
-
-
-///Imagine a line that starts from the given HyperPoint, and travels in the dimension given.
-///This function finds all HyperVolume bins that intersect this line, and then returns the 
-///bin numbers. The bin numbers are ordered along the direction of the line.
-std::vector<int> HyperVolumeBinning::findOrderedBinsOnLine( const HyperPoint& point, int dim ) const{
-
-  std::vector<int> volumesOnLine;
-  std::vector<double> binCenters;
-
-  for (unsigned int i = 0; i < _hyperVolumes.size(); i++){
-    if ( _binNum.at(i) == -1 ) continue;
-    if ( isLineInVolume( _hyperVolumes.at(i), point, dim ) == true){
-      volumesOnLine.push_back( i );
-      binCenters   .push_back( _hyperVolumes.at(i).getAverageCenter().at(dim) );
-    }
-  }
-  
-  int        * arrIndex = new int    [binCenters.size()];
-  double     * arrCen   = new double [binCenters.size()];
-
-  for (unsigned i = 0; i < binCenters.size(); i++){
-    arrIndex[i] = i;
-    arrCen  [i] = binCenters.at(i);
-  }
-  
-  TMath::Sort( (int)binCenters.size(), arrCen, arrIndex, false);
-  
-  std::vector<int> sortedVolumesOnLine;
-
-  for (unsigned i = 0; i < binCenters.size(); i++){
-    sortedVolumesOnLine.push_back( volumesOnLine.at( arrIndex[i] ) );
-  }
-  
-  delete [] arrIndex;
-  delete [] arrCen;
-
-  return sortedVolumesOnLine;
-
-}
-
-///Check if a line that starts from the given HyperPoint, and travels in the dimension given,
-///goes through the HyperVolume given.
-///
-bool HyperVolumeBinning::isLineInVolume( const HyperVolume& volume, const HyperPoint& point, int dim ) const{
-  
-  int nCubes = volume.getHyperCuboids().size();
-
-  for (int i = 0; i < nCubes; i++){
-    bool val = isLineInCuboid( volume.getHyperCuboid(i), point, dim );
-    if (val == true) return true;
-  }
-  
-  return false;
-
-}
-
-///Check if a line that starts from the given HyperPoint, and travels in the dimension given,
-///goes through the HyperCuboid given.
-///
-bool HyperVolumeBinning::isLineInCuboid( const HyperCuboid& cuboid, const HyperPoint& point, int dim ) const{
-
-  for (int i = 0; i < getDimension(); i++){
-    if ( i == dim ) continue;
-    HyperPoint lowCorner  = cuboid.getLowCorner ();
-    HyperPoint highCorner = cuboid.getHighCorner();
-    if ( lowCorner.at(i) > point.at(i) || highCorner.at(i) <= point.at(i) ) return false;
-  }
-  
-  return true;
-
-}
-
 
 ///Get number of bins (this is NOT the number of
 ///HyperVolumes!!! - see the class description for more details)
-int HyperVolumeBinning::getNumBins() const{
+int HyperBinning::getNumBins() const{
   
   //std::cout << "getNumBins" << std::endl;
   if (_changed == true) updateCash();
@@ -445,14 +232,14 @@ int HyperVolumeBinning::getNumBins() const{
 
 ///get the number of HyperVolumes
 ///
-int HyperVolumeBinning::getNumHyperVolumes() const{
+int HyperBinning::getNumHyperVolumes() const{
   return _hyperVolumes.size();
 }  
 
 ///Get the HyperVolume assosiated with bin number i. This just uses 
 ///the _hyperVolumeNumFromBinNum variable to find the HyperVolume number
 ///from the bin number, then returns that HyperVolume.
-const HyperVolume& HyperVolumeBinning::getBinHyperVolume(int binNumber) const{
+HyperVolume HyperBinning::getBinHyperVolume(int binNumber) const{
   
   //std::cout << "getBinHyperVolume" << std::endl;
   if (_changed == true) updateCash();
@@ -463,14 +250,14 @@ const HyperVolume& HyperVolumeBinning::getBinHyperVolume(int binNumber) const{
 ///Get the bin number assosiated with a given HyperVolume number. 
 ///If this returns -1, it means that the HyperVolume in question
 ///is not a bin, but part of the binning hierarchy.
-int HyperVolumeBinning::getBinNum(int volumeNumber) const{
+int HyperBinning::getBinNum(int volumeNumber) const{
   if (_changed == true) updateCash();
   return _binNum.at(volumeNumber);
 }
 
 /// get the HyperVolume Number from the bin number
 ///
-int HyperVolumeBinning::getHyperVolumeNumber(int binNumber) const{
+int HyperBinning::getHyperVolumeNumber(int binNumber) const{
   if (_changed == true) updateCash(); 
   return _hyperVolumeNumFromBinNum.at(binNumber);
 }
@@ -478,7 +265,7 @@ int HyperVolumeBinning::getHyperVolumeNumber(int binNumber) const{
 ///Update the cash which includes the  mutable member variables
 ///_binNum, _hyperVolumeNumFromBinNum, _averageBinWidth,
 /// and _minmax.
-void HyperVolumeBinning::updateCash() const{
+void HyperBinning::updateCash() const{
 
   //note the ordering of theses is important...
   //possilbe infinite loops
@@ -493,7 +280,7 @@ void HyperVolumeBinning::updateCash() const{
 
 ///Update the member variables _binNum and _hyperVolumeNumFromBinNum.
 ///Will usually be called from updateCash()
-void HyperVolumeBinning::updateBinNumbering() const{
+void HyperBinning::updateBinNumbering() const{
   
   //first fill all the bin numbers with -1
   int nVolumes = getNumHyperVolumes();
@@ -524,8 +311,10 @@ void HyperVolumeBinning::updateBinNumbering() const{
  
 }
 
-///get limits
-HyperCuboid HyperVolumeBinning::getLimits() const{
+///return the limits of the binning.
+///This value is cashed for speed - when the binning changes the cashe will
+///automatically be updated.
+HyperCuboid HyperBinning::getLimits() const{
   if (_changed == true) updateCash();   
   return _minmax;
 }
@@ -534,7 +323,7 @@ HyperCuboid HyperVolumeBinning::getLimits() const{
 
 ///update the _averageBinWidth HyperPoint. 
 ///Will usually be called from updateCash()
-void HyperVolumeBinning::updateAverageBinWidth() const{
+void HyperBinning::updateAverageBinWidth() const{
   
   int dim = getDimension();
 
@@ -556,7 +345,7 @@ void HyperVolumeBinning::updateAverageBinWidth() const{
 
 ///Update the miniumum and maximum values, _minmax, 
 ///in the cashe. Will usually be called from updateCash().
-void HyperVolumeBinning::updateMinMax() const{
+void HyperBinning::updateMinMax() const{
   
   int dim = getDimension();
 
@@ -584,57 +373,38 @@ void HyperVolumeBinning::updateMinMax() const{
 ///get the average bin width HyperPoint (average bin width in each dimension).
 ///This value is cashed for speed - when the binning changes the cashe will
 ///automatically be updated.
-HyperPoint HyperVolumeBinning::getAverageBinWidth() const{
+HyperPoint HyperBinning::getAverageBinWidth() const{
   //std::cout << "getAverageBinWidth" << std::endl;
   if (_changed == true) updateCash();
   return _averageBinWidth;  
 
 }
 
-///return the minimum value for a selected dimension.
-///This value is cashed for speed - when the binning changes the cashe will
-///automatically be updated.
-double HyperVolumeBinning::getMin(int dimension) const{
 
-  if (_changed == true) updateCash();
-  return _minmax.getLowCorner().at(dimension);
-
-}
-///return the maximum value for a selected dimension.
-///This value is cashed for speed - when the binning changes the cashe will
-///automatically be updated.
-double HyperVolumeBinning::getMax(int dimension) const{
-
-  if (_changed == true) updateCash();
-  return _minmax.getHighCorner().at(dimension);
-
-}
-
-
-///Add a HyperVolume to the HyperVolumeBinning and add a set of empty
+///Add a HyperVolume to the HyperBinning and add a set of empty
 ///HyperVolume links.
-bool HyperVolumeBinning::addHyperVolume(const HyperVolume& hyperVolume){
+bool HyperBinning::addHyperVolume(const HyperVolume& hyperVolume){
   
   //If this is the first volume that has been added, use it to set the dimension
   if (_hyperVolumes.size() == 0){
     setDimension( hyperVolume.getDimension() );
   }
 
-  if (hyperVolume.getDimension() == _dimension) {
+  if (hyperVolume.getDimension() == getDimension()) {
     _hyperVolumes.push_back(hyperVolume); 
     _linkedHyperVolumes.push_back(std::vector<int>(0, 0.0));
     _changed = true;
     return true;
   }
 
-  ERROR_LOG << "This HyperVolume has the wrong dimensionality for this HyperVolumeBinning";
+  ERROR_LOG << "This HyperVolume has the wrong dimensionality for this HyperBinning";
   return false;
 
 }
 
 ///Add a link from one HyperVolume to another HyperVolume. 
 ///Used for the hierarchy of bins discussed in the class description.
-bool HyperVolumeBinning::addHyperVolumeLink(int volumeNum, int linkedVolumeNum){
+bool HyperBinning::addHyperVolumeLink(int volumeNum, int linkedVolumeNum){
 
   if ( volumeNum < getNumHyperVolumes() && volumeNum >= 0) {
     _linkedHyperVolumes.at(volumeNum).push_back(linkedVolumeNum);
@@ -646,13 +416,13 @@ bool HyperVolumeBinning::addHyperVolumeLink(int volumeNum, int linkedVolumeNum){
   return false;
 }
 
-///Create the branches in a TTree so that the HyperVolumeBinning
+///Create the branches in a TTree so that the HyperBinning
 ///can be saved.
-void HyperVolumeBinning::createBranches(TTree* tree, int* binNumber, double* lowCorner, double* highCorner, std::vector<int>** linkedBins) const{
+void HyperBinning::createBranches(TTree* tree, int* binNumber, double* lowCorner, double* highCorner, std::vector<int>** linkedBins) const{
 
   tree->Branch("binNumber", binNumber);
   tree->Branch("linkedBins", "vector<int>" ,linkedBins);
-  for (int i = 0; i < _dimension; i++) {
+  for (int i = 0; i < getDimension(); i++) {
     TString lowCornerName  = "lowCorner_"; lowCornerName += i;
     TString highCornerName = "highCorner_"; highCornerName += i;
     tree->Branch(lowCornerName, lowCorner + i);
@@ -663,27 +433,27 @@ void HyperVolumeBinning::createBranches(TTree* tree, int* binNumber, double* low
 
 ///Save a single HyperVolume to a tree - this involves looping
 ///over every HyperCuboid in the HyperVolume.
-void HyperVolumeBinning::saveHyperVolumeToTree(TTree* tree, double* lowCorner, double* highCorner, const HyperVolume& hyperVolume) const{
+void HyperBinning::saveHyperVolumeToTree(TTree* tree, double* lowCorner, double* highCorner, const HyperVolume& hyperVolume) const{
 
   for(int i = 0; i < hyperVolume.size(); i++){
     HyperCuboid hyperCuboid = hyperVolume.getHyperCuboid(i);
     HyperPoint lowCornerVect  = hyperCuboid.getLowCorner();
     HyperPoint highCornerVect = hyperCuboid.getHighCorner();
-    for (int dim = 0; dim < _dimension; dim++) lowCorner [dim] = lowCornerVect .at(dim);
-    for (int dim = 0; dim < _dimension; dim++) highCorner[dim] = highCornerVect.at(dim);
+    for (int dim = 0; dim < getDimension(); dim++) lowCorner [dim] = lowCornerVect .at(dim);
+    for (int dim = 0; dim < getDimension(); dim++) highCorner[dim] = highCornerVect.at(dim);
     tree->Fill();
   }
 
 }
 
-///Save the HyperVolumeBinning to a TFile.
+///Save the HyperBinning to a TFile.
 ///
-void HyperVolumeBinning::save(TString filename) const{
+void HyperBinning::save(TString filename) const{
 
   TFile* file = new TFile(filename, "RECREATE");
 
   if (file == 0){
-    ERROR_LOG << "Could not open TFile in HyperVolumeBinning::save(" << filename << ")";
+    ERROR_LOG << "Could not open TFile in HyperBinning::save(" << filename << ")";
     return;
   }
 
@@ -694,23 +464,23 @@ void HyperVolumeBinning::save(TString filename) const{
 
 }
 
-///Save the HyperVolumeBinning to the open (and in scope) TFile.
+///Save the HyperBinning to the open (and in scope) TFile.
 ///
-void HyperVolumeBinning::save() const{
+void HyperBinning::save() const{
   
   savePrimaryVolumeNumbers();
 
-  TTree* tree = new TTree("HyperVolumeBinning", "HyperVolumeBinning");
+  TTree* tree = new TTree("HyperBinning", "HyperBinning");
   
   if (tree == 0){
-    ERROR_LOG << "Could not open TTree in HyperVolumeBinning::save()";
+    ERROR_LOG << "Could not open TTree in HyperBinning::save()";
     return;
   }
 
   //Define branch addresses
   int binNumber = -1;
-  double* lowCorner = new double [_dimension];
-  double* highCorner = new double [_dimension];
+  double* lowCorner = new double [getDimension()];
+  double* highCorner = new double [getDimension()];
   std::vector<int>* linkedBins = new std::vector<int>();
 
   //Create branches and link them to branch addresses
@@ -734,12 +504,12 @@ void HyperVolumeBinning::save() const{
 
 ///Save the list of Primary Volume Numbers to the open (and in scope) TFile.
 ///
-void HyperVolumeBinning::savePrimaryVolumeNumbers() const{
+void HyperBinning::savePrimaryVolumeNumbers() const{
 
   TTree* tree = new TTree("PrimaryVolumeNumbers", "PrimaryVolumeNumbers");
   
   if (tree == 0){
-    ERROR_LOG << "Could not open TTree in HyperVolumeBinning::save()";
+    ERROR_LOG << "Could not open TTree in HyperBinning::save()";
     return;
   }
 
@@ -760,12 +530,12 @@ void HyperVolumeBinning::savePrimaryVolumeNumbers() const{
 
 ///Save the list of Primary Volume Numbers to the open (and in scope) TFile.
 ///
-void HyperVolumeBinning::loadPrimaryVolumeNumbers(TFile* file) {
+void HyperBinning::loadPrimaryVolumeNumbers(TFile* file) {
 
   TTree* tree = dynamic_cast<TTree*>( file->Get("PrimaryVolumeNumbers") );
   
   if (tree == 0){
-    ERROR_LOG << "Could not open TTree in HyperVolumeBinning::loadPrimaryVolumeNumbers()";
+    ERROR_LOG << "Could not open TTree in HyperBinning::loadPrimaryVolumeNumbers()";
     return;
   }
 
@@ -782,13 +552,13 @@ void HyperVolumeBinning::loadPrimaryVolumeNumbers(TFile* file) {
   
 }
 
-///Set branch addresses for loading HyperVolumeBinning
+///Set branch addresses for loading HyperBinning
 ///from a file.
-void HyperVolumeBinning::setBranchAddresses(TTree* tree, int* binNumber, double* lowCorner, double* highCorner, std::vector<int>** linkedBins) const{
+void HyperBinning::setBranchAddresses(TTree* tree, int* binNumber, double* lowCorner, double* highCorner, std::vector<int>** linkedBins) const{
 
   tree->SetBranchAddress("binNumber", binNumber);
   tree->SetBranchAddress("linkedBins", linkedBins);
-  for (int i = 0; i < _dimension; i++) {
+  for (int i = 0; i < getDimension(); i++) {
     TString lowCornerName  = "lowCorner_"; lowCornerName += i; 
     TString highCornerName = "highCorner_"; highCornerName += i;
     tree->SetBranchAddress(lowCornerName, lowCorner + i);
@@ -797,12 +567,12 @@ void HyperVolumeBinning::setBranchAddresses(TTree* tree, int* binNumber, double*
 
 }
 
-///Look at the tree that contains the HyperVolumeBinning and find the dimensionality
+///Look at the tree that contains the HyperBinning and find the dimensionality
 ///
-int HyperVolumeBinning::getDimension(TTree* tree){
+int HyperBinning::getHyperBinningDimFromTree(TTree* tree){
 
   if (tree == 0){
-    ERROR_LOG << "Invalid tree in HyperVolumeBinning::getDimension(TTree* tree)" << std::endl;
+    ERROR_LOG << "Invalid tree in HyperBinning::getDimension(TTree* tree)" << std::endl;
     return 0;
   }  
   
@@ -816,7 +586,7 @@ int HyperVolumeBinning::getDimension(TTree* tree){
   }
   
   if (nDim == 0){
-    ERROR_LOG << "I cannot find any branches in the tree that indicate a HyperVolumeBinning is stored here" << std::endl;
+    ERROR_LOG << "I cannot find any branches in the tree that indicate a HyperBinning is stored here" << std::endl;
     return 0;
   }
 
@@ -824,50 +594,50 @@ int HyperVolumeBinning::getDimension(TTree* tree){
 
 }
 
-///Look at the tree that contains the HyperVolumeBinning and find the dimensionality
+///Look at the tree that contains the HyperBinning and find the dimensionality
 ///
-std::vector<int> HyperVolumeBinning::getPrimaryVolumeNumbers() const{
+std::vector<int> HyperBinning::getPrimaryVolumeNumbers() const{
   return _primaryVolumeNumbers;
 }
 
 
-///Load HyperVolumeBinning from a file
+///Load HyperBinning from a file
 ///
-void HyperVolumeBinning::load(TString filename){
+void HyperBinning::load(TString filename){
 
   TFile* file = new TFile(filename, "READ");
 
   if (file == 0){
-    ERROR_LOG << "Could not open TFile in HyperVolumeBinning::load(" << filename << ")";
+    ERROR_LOG << "Could not open TFile in HyperBinning::load(" << filename << ")";
     return;
   }
 
   loadPrimaryVolumeNumbers(file);
 
-  TTree* tree = (TTree*)file->Get("HyperVolumeBinning");
+  TTree* tree = (TTree*)file->Get("HyperBinning");
 
   if (tree == 0){
-    ERROR_LOG << "Could not open TTree in HyperVolumeBinning::load()";
+    ERROR_LOG << "Could not open TTree in HyperBinning::load()";
     return;
   }
   
   //Figure out how many dimensions there are from the tree
-  setDimension( getDimension(tree) );
+  setDimension( getHyperBinningDimFromTree(tree) );
 
   //Create branch addresses and link them to TTree
   int binNumber = -1;
-  double* lowCorner  = new double [_dimension];
-  double* highCorner = new double [_dimension];  
+  double* lowCorner  = new double [getDimension()];
+  double* highCorner = new double [getDimension()];  
   std::vector<int>* linkedBins = new std::vector<int>();
 
   setBranchAddresses(tree, &binNumber, lowCorner, highCorner, &linkedBins);
   
 
-  //Loop over the TTree and fill the HyperVolumeBinning
+  //Loop over the TTree and fill the HyperBinning
   int nEntries = tree->GetEntries();
 
   int currentBinNumber = -1;
-  HyperVolume* currentHyperVolume = new HyperVolume(_dimension);
+  HyperVolume* currentHyperVolume = new HyperVolume(getDimension());
   std::vector<int> currentLinkedVolumes;
 
   //_verbose = true;
@@ -880,9 +650,9 @@ void HyperVolumeBinning::load(TString filename){
     if(ent == 0 || currentBinNumber == binNumber){
       currentBinNumber = binNumber;
       currentLinkedVolumes = *linkedBins;
-      HyperPoint lowCornerVect (_dimension);
-      HyperPoint highCornerVect(_dimension);
-      for (int i = 0; i < _dimension; i++){
+      HyperPoint lowCornerVect (getDimension());
+      HyperPoint highCornerVect(getDimension());
+      for (int i = 0; i < getDimension(); i++){
         lowCornerVect .at(i) = lowCorner [i];
         highCornerVect.at(i) = highCorner[i];
       }
@@ -891,19 +661,19 @@ void HyperVolumeBinning::load(TString filename){
     }
 
     //if the bin number has changed, need to add
-    //previous HyperVolume to HyperVolumeBinning
+    //previous HyperVolume to HyperBinning
     //and start a new HyperVolume
     else {
       VERBOSE_LOG << "Adding volume to binning";
       this->addHyperVolume(*currentHyperVolume);
       _linkedHyperVolumes.back() = currentLinkedVolumes;
       delete currentHyperVolume;
-      currentHyperVolume = new HyperVolume(_dimension);
+      currentHyperVolume = new HyperVolume(getDimension());
       currentLinkedVolumes = *linkedBins;
       currentBinNumber = binNumber;
-      HyperPoint lowCornerVect (_dimension);
-      HyperPoint highCornerVect(_dimension);
-      for (int i = 0; i < _dimension; i++){
+      HyperPoint lowCornerVect (getDimension());
+      HyperPoint highCornerVect(getDimension());
+      for (int i = 0; i < getDimension(); i++){
         lowCornerVect .at(i) = lowCorner [i];
         highCornerVect.at(i) = highCorner[i];
       }
@@ -936,8 +706,8 @@ void HyperVolumeBinning::load(TString filename){
 
 ///Destructor
 ///
-HyperVolumeBinning::~HyperVolumeBinning(){
-  GOODBYE_LOG << "Goodbye from the HyperVolumeBinning() Constructor";
+HyperBinning::~HyperBinning(){
+  GOODBYE_LOG << "Goodbye from the HyperBinning() Constructor";
 }
 
 

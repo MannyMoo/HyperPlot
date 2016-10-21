@@ -1,7 +1,7 @@
 #include "HyperBinningPainter.h"
 
 /** Construct a HyperBinningPainter for a given HyperBinningHistogram */
-HyperBinningPainter::HyperBinningPainter(HyperBinningHistogram* histogram) :
+HyperBinningPainter::HyperBinningPainter(HyperHistogram* histogram) :
   _histogram(histogram),
   _density(false)
 {
