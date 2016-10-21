@@ -62,11 +62,15 @@ class BinningBase {
   TString getBinningType() const;
   bool isSameBinningType(const BinningBase& other) const;
 
+  virtual bool isDiskResident() const;
+  virtual TString filename() const;
+
   virtual ~BinningBase();
   
   //Purely virtual functions
 
-  virtual void load(TString filename) = 0;
+  virtual void load(TString filename, TString option = "READ") = 0;
+
   virtual void save(TString filename) const = 0;
   virtual void save() const = 0; 
 
@@ -81,7 +85,7 @@ class BinningBase {
 
   virtual HyperPoint getAverageBinWidth() const = 0;
   virtual HyperCuboid getLimits() const = 0;
-
+  
 
 };
 

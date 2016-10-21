@@ -12,7 +12,7 @@
 #include "MessageService.h"
 #include "HyperCuboid.h"
 #include "HyperPointSet.h"
-#include "HyperBinning.h"
+#include "HyperBinningMemRes.h"
 #include "RootPlotter1D.h"
 #include "RootPlotter2D.h"
 #include "HyperFunction.h"
@@ -231,7 +231,7 @@ class HyperBinningMaker {
   // These functions can be used to get a 
   // HyperBinningHistogram of the current state 
 
-  HyperBinning getHyperVolumeBinning() const;
+  HyperBinningMemRes getHyperVolumeBinning() const;
   HyperHistogram* getHyperBinningHistogram() const;
   HyperHistogram* getShadowHyperBinningHistogram() const;
   HyperHistogram* getRatioHyperBinningHistogram() const;

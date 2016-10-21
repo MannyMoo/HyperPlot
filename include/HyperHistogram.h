@@ -39,6 +39,7 @@ Binning Algorithm Options:
 #include "HyperName.h"
 #include "BinningBase.h"
 #include "HyperBinning.h"
+#include "HyperBinningDiskRes.h"
 
 #include "HyperBinningAlgorithms.h"
 
@@ -82,8 +83,9 @@ class HyperHistogram : public HistogramBase, public HyperFunction {
   );
  
   HyperHistogram(const BinningBase& binning);
-  HyperHistogram(TString filename);
+  HyperHistogram(TString filename, TString option = "MEMRES READ");
   HyperHistogram(std::vector<TString> filename);
+  HyperHistogram(TString targetFilename, std::vector<TString> filename);
 
   
   void setNames( HyperName names );
@@ -132,7 +134,7 @@ class HyperHistogram : public HistogramBase, public HyperFunction {
 
   TString getBinningType(TString filename);
 
-  void load(TString filename);
+  void load(TString filename, TString option = "MEMRES READ");
   
   void setContentsFromFunc(const HyperFunction& func);
   

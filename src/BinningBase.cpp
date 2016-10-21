@@ -51,6 +51,12 @@ TString BinningBase::getBinningType() const{
   return _binningType;
 }
 
+bool BinningBase::isDiskResident() const{
+  return false;
+}
+TString BinningBase::filename() const{
+  return "";
+}
 
 BinningBase::~BinningBase(){
 

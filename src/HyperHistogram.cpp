@@ -94,11 +94,11 @@ HyperHistogram::HyperHistogram(
 /**
 Load a HyperHistogram from file
 */
-HyperHistogram::HyperHistogram(TString filename) :
+HyperHistogram::HyperHistogram(TString filename, TString option) :
   HistogramBase(0)
 {
   WELCOME_LOG << "Good day from the HyperHistogram() Constructor";
-  load(filename);
+  load(filename, option);
 
   //This inherets from a HyperFunction. Although non-essential, it's useful for
   //the function to have some limits for it's domain.
@@ -119,7 +119,7 @@ HyperHistogram::HyperHistogram(std::vector<TString> filename) :
   }
 
   INFO_LOG << "Loading HyperHistogram at: " << filename.at(0) << std::endl;
-  load(filename.at(0));
+  load(filename.at(0), "MEMRES");
 
   for (int i = 1; i < nFiles; i++){
     INFO_LOG << "Loading and merging HyperHistogram at: " << filename.at(i) << std::endl;
@@ -130,6 +130,30 @@ HyperHistogram::HyperHistogram(std::vector<TString> filename) :
   //the function to have some limits for it's domain.
   setFuncLimits( getLimits() );
 
+}
+
+HyperHistogram::HyperHistogram(TString targetFilename, std::vector<TString> filename) :
+  HistogramBase(0)
+{
+
+  WELCOME_LOG << "Good day from the HyperHistogram() Constructor";
+  
+  int nFiles = filename.size();
+  if (nFiles == 0){
+    ERROR_LOG << "The list of filenames you provided to HyperHistogram is empty" << std::endl;
+  }
+
+  INFO_LOG << "Loading HyperHistogram at: " << targetFilename << std::endl;
+  load(targetFilename, "DISKRES RECREATE");
+
+  for (int i = 0; i < nFiles; i++){
+    INFO_LOG << "Loading and merging HyperHistogram at: " << filename.at(i) << std::endl;
+    merge(filename.at(i));
+  }
+  
+  //This inherets from a HyperFunction. Although non-essential, it's useful for
+  //the function to have some limits for it's domain.
+  setFuncLimits( getLimits() );  
 }
 
 
@@ -233,7 +257,7 @@ Merge this histogram with another in a file
 */
 void HyperHistogram::merge( TString filenameother ){
 
-  HyperHistogram other(filenameother);
+  HyperHistogram other(filenameother, "DISKRES");
   merge( other );
 
 }
@@ -270,7 +294,7 @@ void HyperHistogram::mergeBinsWithSameContent(){
     return;
   }
   
-  const HyperBinning& hyperBinning = dynamic_cast<const HyperBinning&>( getBinning() );
+  const HyperBinningMemRes& hyperBinning = dynamic_cast<const HyperBinningMemRes&>( getBinning() );
 
   std::map<int, bool> volumeKept;
   for (int i = 0; i < hyperBinning.getNumHyperVolumes(); i++){  
@@ -348,7 +372,7 @@ void HyperHistogram::mergeBinsWithSameContent(){
   
   //Create a new HyperVolumeBinning with the bins removed
 
-  HyperBinning binningNew;
+  HyperBinningMemRes binningNew;
   
   int count = 0;
 
@@ -363,9 +387,9 @@ void HyperHistogram::mergeBinsWithSameContent(){
       ERROR_LOG << "Something has gone wrong in mergeBinsWithSameContent()" << std::endl;
     }
 
-    binningNew.addHyperVolume(vol);
     
     std::vector<int> linkedVols = hyperBinning.getLinkedHyperVolumes( i );
+    std::vector<int> newLinkedVols;
 
     int nLinked = 0;
     for (unsigned j = 0; j < linkedVols.size(); j++){
@@ -373,13 +397,16 @@ void HyperHistogram::mergeBinsWithSameContent(){
       int newLinkVolNum = oldToNewVolumeNum[linkVolNum];
 
       if (newLinkVolNum != -1){
-        binningNew.addHyperVolumeLink(newVolNum, newLinkVolNum);
+        newLinkedVols.push_back(newLinkVolNum);
         nLinked++;
       }
 
 
     }
     
+    binningNew.addHyperVolume(vol, newLinkedVols);
+
+
     if (nLinked == 1){
       INFO_LOG << "This should never be one" << std::endl;
     }
@@ -539,7 +566,7 @@ HyperHistogram HyperHistogram::slice(std::vector<int> sliceDims, std::vector<dou
   int nSliceDims    = sliceDims.size();
   int nEndDims      = nStartingDims - nSliceDims;
 
-  HyperBinning temp;
+  HyperBinningMemRes temp;
   
   HyperPoint point(nStartingDims);
   for (int i = 0; i < nSliceDims; i++) point.at(sliceDims.at(i)) = sliceVals.at(i);
@@ -887,20 +914,32 @@ TString HyperHistogram::getBinningType(TString filename){
 /**
 Load the HyperHistogram from a TFile
 */
-void HyperHistogram::load(TString filename){
+void HyperHistogram::load(TString filename, TString option){
 
   //If loading from a file, we first need to figure out what 
   //type of binning is saved in that file. 
   
   TString binningType = getBinningType(filename);
-  if (binningType == "HyperBinning"){
-    _binning = new HyperBinning();
+ 
+  if (binningType.Contains("HyperBinning")){
+    if (option.Contains("MEMRES" )) _binning = new HyperBinningMemRes ();
+    if (option.Contains("DISKRES")) _binning = new HyperBinningDiskRes();
   }
   if (binningType == ""){
     ERROR_LOG << "I could not find any binning scheme in this file" << std::endl;
   }
-  _binning->load(filename);
-  this->loadBase(filename);
+
+  if (option.Contains("RECREATE")){
+    _binning = new HyperBinningDiskRes();
+    _binning->load(filename, "RECREATE");
+    this->resetBinContents(0);
+    INFO_LOG << "Finished making HyperBinningDiskRes" << std::endl;    
+  }
+  else{
+    _binning->load(filename, "READ");
+    this->loadBase(filename);
+  }
+
 
 }
 
@@ -915,6 +954,27 @@ double HyperHistogram::getBinVolume(int bin) const{
 Destructor
 */
 HyperHistogram::~HyperHistogram(){
+
+  bool diskResidentBinning = 0;
+  TString filename = "";
+
+  if (_binning != 0){
+    diskResidentBinning = _binning->isDiskResident();
+    filename            = _binning->filename();
+    delete _binning;
+  }
+  
+  if (diskResidentBinning){
+
+    TFile *file=new TFile(filename,"update");
+    std::string object_to_remove="HistogramBase";
+    gDirectory->Delete(object_to_remove.c_str());
+    
+    saveBase();
+
+    file->Close();
+  }
+
   GOODBYE_LOG << "Goodbye from the HyperHistogram() Constructor"; 
 }
 

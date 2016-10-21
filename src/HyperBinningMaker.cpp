@@ -1119,17 +1119,16 @@ int HyperBinningMaker::getNumContinueBins(int dimension) const{
 
 ///Use the current state of the HyperBinningMaker to create
 ///a HyperVolumeBinning
-HyperBinning HyperBinningMaker::getHyperVolumeBinning() const{
+HyperBinningMemRes HyperBinningMaker::getHyperVolumeBinning() const{
   
   int dimension = _hyperCuboids.at(0).getDimension();
 
-  HyperBinning temp;
+  HyperBinningMemRes temp;
   
   for (unsigned int i = 0; i < _hyperCuboids.size(); i++){
     HyperVolume hyperVolume(dimension);
     hyperVolume.addHyperCuboid(_hyperCuboids.at(i));
-    temp.addHyperVolume(hyperVolume);
-    for (unsigned j = 0; j < _linkedBins.at(i).size(); j++) temp.addHyperVolumeLink(i, _linkedBins.at(i).at(j));
+    temp.addHyperVolume(hyperVolume, _linkedBins.at(i));
   }
 
   temp.addPrimaryVolumeNumber(0);
@@ -1145,7 +1144,7 @@ HyperBinning HyperBinningMaker::getHyperVolumeBinning() const{
 ///a HyperBinningHistogram
 HyperHistogram* HyperBinningMaker::getHyperBinningHistogram() const{
 
-  HyperBinning binning = getHyperVolumeBinning();
+  HyperBinningMemRes binning = getHyperVolumeBinning();
   
   HyperHistogram* histogram = new HyperHistogram( binning );
 
@@ -1167,7 +1166,7 @@ HyperHistogram* HyperBinningMaker::getHyperBinningHistogram() const{
 ///a HyperBinningHistogram for the shadow events
 HyperHistogram* HyperBinningMaker::getShadowHyperBinningHistogram() const{
 
-  HyperBinning binning = getHyperVolumeBinning();
+  HyperBinningMemRes binning = getHyperVolumeBinning();
   
   HyperHistogram* histogram = new HyperHistogram( binning );
 
