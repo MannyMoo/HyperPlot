@@ -4,9 +4,11 @@
 ///The only constructor
 HyperBinningMemRes::HyperBinningMemRes() 
 {
-  setBinningType("HyperBinningMemRes");
   WELCOME_LOG << "Hello from the HyperBinningMemRes() Constructor";
 }
+
+
+
 
 ///Set the dimension of the HyperBinningMemRes. This can only be 
 ///called once, when it is known what dimesnion it is.
@@ -20,48 +22,6 @@ void HyperBinningMemRes::setDimension(int dim){
 
 }
 
-
-
-
-/// This function will merge the two binnings. It assumes that the first
-///
-void HyperBinningMemRes::mergeBinnings( const BinningBase& other ){
-  
-  if (isSameBinningType(other) == false){
-    ERROR_LOG << "You cannot merge a HyperBinningMemRes with a " << other.getBinningType() << std::endl;
-    return;
-  }
-  
-  const HyperBinningMemRes& otherHyperBinningMemRes = dynamic_cast<const HyperBinningMemRes&>(other);
-
-  int nVolumes      = getNumHyperVolumes();
-  int nVolumesOther = otherHyperBinningMemRes.getNumHyperVolumes();
-
-  //this means every volume number in 'otherHyperBinningMemRes' needs to be increased by nVolumes.
-  //This is important for linked bins and primary volume numbers!!
-
-  for (int i = 0; i < nVolumesOther; i++){
-    _hyperVolumes.push_back( otherHyperBinningMemRes._hyperVolumes.at(i) );
-    std::vector<int> linkedVolumes = otherHyperBinningMemRes._linkedHyperVolumes.at(i);
-
-    for (unsigned int j = 0; j < linkedVolumes.size(); j++){
-      linkedVolumes.at(j) += nVolumes;
-    }
-
-    _linkedHyperVolumes.push_back(linkedVolumes);
-  }
-  
-  int nPrimaryBinsOther = otherHyperBinningMemRes._primaryVolumeNumbers.size();
-
-  for (int i = 0; i < nPrimaryBinsOther; i++){
-    int primaryVolumeNumber = otherHyperBinningMemRes._primaryVolumeNumbers.at(i);
-    primaryVolumeNumber += nVolumes;
-    _primaryVolumeNumbers.push_back(primaryVolumeNumber);
-  }
-
-  _changed = true;
-
-}
 
 std::vector<int> HyperBinningMemRes::getLinkedHyperVolumes( int volumeNumber ) const{
 
@@ -124,117 +84,7 @@ bool HyperBinningMemRes::addHyperVolume(const HyperVolume& hyperVolume, std::vec
 }
 
 
-///Create the branches in a TTree so that the HyperBinningMemRes
-///can be saved.
-void HyperBinningMemRes::createBranches(TTree* tree, int* binNumber, double* lowCorner, double* highCorner, std::vector<int>** linkedBins) const{
 
-  tree->Branch("binNumber", binNumber);
-  tree->Branch("linkedBins", "vector<int>" ,linkedBins);
-  for (int i = 0; i < getDimension(); i++) {
-    TString lowCornerName  = "lowCorner_"; lowCornerName += i;
-    TString highCornerName = "highCorner_"; highCornerName += i;
-    tree->Branch(lowCornerName, lowCorner + i);
-    tree->Branch(highCornerName, highCorner + i);
-  }
-  
-}
-
-///Save a single HyperVolume to a tree - this involves looping
-///over every HyperCuboid in the HyperVolume.
-void HyperBinningMemRes::saveHyperVolumeToTree(TTree* tree, double* lowCorner, double* highCorner, const HyperVolume& hyperVolume) const{
-
-  for(int i = 0; i < hyperVolume.size(); i++){
-    HyperCuboid hyperCuboid = hyperVolume.getHyperCuboid(i);
-    HyperPoint lowCornerVect  = hyperCuboid.getLowCorner();
-    HyperPoint highCornerVect = hyperCuboid.getHighCorner();
-    for (int dim = 0; dim < getDimension(); dim++) lowCorner [dim] = lowCornerVect .at(dim);
-    for (int dim = 0; dim < getDimension(); dim++) highCorner[dim] = highCornerVect.at(dim);
-    tree->Fill();
-  }
-
-}
-
-///Save the HyperBinningMemRes to a TFile.
-///
-void HyperBinningMemRes::save(TString filename) const{
-
-  TFile* file = new TFile(filename, "RECREATE");
-
-  if (file == 0){
-    ERROR_LOG << "Could not open TFile in HyperBinningMemRes::save(" << filename << ")";
-    return;
-  }
-
-  save();
-
-  //file->Write();
-  file->Close();
-
-}
-
-///Save the HyperBinningMemRes to the open (and in scope) TFile.
-///
-void HyperBinningMemRes::save() const{
-  
-  savePrimaryVolumeNumbers();
-
-  TTree* tree = new TTree("HyperBinning", "HyperBinning");
-  
-  if (tree == 0){
-    ERROR_LOG << "Could not open TTree in HyperBinningMemRes::save()";
-    return;
-  }
-
-  //Define branch addresses
-  int binNumber = -1;
-  double* lowCorner = new double [getDimension()];
-  double* highCorner = new double [getDimension()];
-  std::vector<int>* linkedBins = new std::vector<int>();
-
-  //Create branches and link them to branch addresses
-  createBranches(tree, &binNumber, lowCorner, highCorner, &linkedBins);
-  
-  //Loop over each HyperVolume
-  for(unsigned int bin = 0; bin < _hyperVolumes.size(); bin++ ){
-    binNumber = bin;
-    *linkedBins = _linkedHyperVolumes.at(bin);
-    //save all HyperCuboids in this HyperVolume to the TTree under the current bin number
-    saveHyperVolumeToTree(tree, lowCorner, highCorner, _hyperVolumes.at(bin));
-  }
-  
-  //tree->Write();
-  
-  delete lowCorner;
-  delete highCorner;
-  delete linkedBins;
-
-}
-
-///Save the list of Primary Volume Numbers to the open (and in scope) TFile.
-///
-void HyperBinningMemRes::savePrimaryVolumeNumbers() const{
-
-  TTree* tree = new TTree("PrimaryVolumeNumbers", "PrimaryVolumeNumbers");
-  
-  if (tree == 0){
-    ERROR_LOG << "Could not open TTree in HyperBinningMemRes::save()";
-    return;
-  }
-
-  //Define branch addresses
-  int volumeNumber = -1;
-
-  tree->Branch("volumeNumber", &volumeNumber);
-
-  //Loop over each Primary Volume
-  for(unsigned int i = 0; i < _primaryVolumeNumbers.size(); i++ ){
-    volumeNumber = _primaryVolumeNumbers.at(i);
-    tree->Fill();
-  }
-  
-  //tree->Write();
-  
-}
 
 ///Save the list of Primary Volume Numbers to the open (and in scope) TFile.
 ///

@@ -141,16 +141,13 @@ class HyperBinningMemRes : public HyperBinning {
   */
 
   void setBranchAddresses   (TTree* tree, int* binNumber, double* lowCorner, double* highCorner, std::vector<int>** linkedBins) const;
-  void createBranches       (TTree* tree, int* binNumber, double* lowCorner, double* highCorner, std::vector<int>** linkedBins) const;
-  void saveHyperVolumeToTree(TTree* tree, double* lowCorner, double* highCorner, const HyperVolume& hyperVolume) const;
   
-  void savePrimaryVolumeNumbers() const;
   void loadPrimaryVolumeNumbers(TFile* file);
   
   public:
   
-  HyperBinningMemRes();
-  
+  HyperBinningMemRes();  
+
   virtual ~HyperBinningMemRes();
 
   //Functions we are required (or choose to) to implement (override) from HyperBinning
@@ -166,17 +163,13 @@ class HyperBinningMemRes : public HyperBinning {
   virtual HyperVolume getHyperVolume(int volumeNumber) const; /**< get one of the HyperVolumes */
   virtual std::vector<int> getLinkedHyperVolumes( int volumeNumber ) const;
 
-  virtual int getNumPrimaryVolumes  () const;  
+  virtual int getNumPrimaryVolumes  (     ) const;  
   virtual int getPrimaryVolumeNumber(int i) const;  
 
 
   //Functions we are required to implement from BinningBase that were not implemented in HyperBinning
 
   virtual void load(TString filename, TString option = "READ");
-  virtual void save(TString filename) const;
-  virtual void save() const; 
-
-  virtual void mergeBinnings( const BinningBase& other );
 
   virtual BinningBase* clone() const;
 

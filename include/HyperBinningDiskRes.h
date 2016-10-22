@@ -82,16 +82,16 @@ class HyperBinningDiskRes : public HyperBinning {
 
   private:
   
-  TFile* _file;
+  mutable TFile* _file;
   bool   _writeable;
 
-  TTree* _tree;
+  mutable TTree* _tree;
   mutable HyperCuboid _cuboid;
   mutable std::vector<int>* _linkedBins;
   mutable int _volumeNumber;
   mutable int _currentEntry;
 
-  TTree* _treePrimVol;
+  mutable TTree* _treePrimVol;
   mutable int _primVolNum;
 
 
@@ -112,10 +112,12 @@ class HyperBinningDiskRes : public HyperBinning {
   
   HyperBinningDiskRes();
   
+  HyperBinningDiskRes(const HyperBinningDiskRes& other);
+
+
   virtual ~HyperBinningDiskRes();
 
   //Functions we are required to implement from HyperBinning
-
 
   virtual void setDimension(int dim);
 
@@ -135,10 +137,6 @@ class HyperBinningDiskRes : public HyperBinning {
   virtual TString filename() const;
 
   virtual void load(TString filename, TString option = "READ");
-  virtual void save(TString filename) const;
-  virtual void save() const; 
-
-  virtual void mergeBinnings( const BinningBase& other );
 
   virtual BinningBase* clone() const;
 

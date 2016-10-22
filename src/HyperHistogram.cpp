@@ -4,16 +4,14 @@
 
 
 /**
-The most basic constructor - just pass my the HyperVolumeBinning
+The most basic constructor - just pass anything that is derrived from BinningBase
 */
 HyperHistogram::HyperHistogram(const BinningBase& binning) :
   HistogramBase(binning.getNumBins()),
   _binning(binning.clone())
 {
   WELCOME_LOG << "Good day from the HyperHistogram() Constructor"; 
-
   setFuncLimits( getLimits() );
-
 }
 
 /**
@@ -63,7 +61,8 @@ HyperHistogram::HyperHistogram(
   AlgOption opt9 
 ) :
   HistogramBase(0),
-  HyperFunction(binningRange)
+  HyperFunction(binningRange),
+  _binning(0)
 {
 
   HyperBinningAlgorithms algSetup(alg);
@@ -92,13 +91,20 @@ HyperHistogram::HyperHistogram(
 }
 
 /**
-Load a HyperHistogram from file
+  Load a HyperHistogram from filename. If
 */
 HyperHistogram::HyperHistogram(TString filename, TString option) :
-  HistogramBase(0)
+  HistogramBase(0),
+  _binning(0)
 {
   WELCOME_LOG << "Good day from the HyperHistogram() Constructor";
-  load(filename, option);
+
+  if (option.Contains("Empty")){
+    loadEmpty(filename, option);
+  }
+  else{
+    load(filename, option);
+  }
 
   //This inherets from a HyperFunction. Although non-essential, it's useful for
   //the function to have some limits for it's domain.
@@ -106,10 +112,12 @@ HyperHistogram::HyperHistogram(TString filename, TString option) :
 }
 
 /**
-Load an array of HyperHistograms from different files and merge them
+Load an array of HyperHistograms from different files and merge them into a 
+memory resident HyperBinning
 */
 HyperHistogram::HyperHistogram(std::vector<TString> filename) :
-  HistogramBase(0)
+  HistogramBase(0),
+  _binning(0)
 {
   WELCOME_LOG << "Good day from the HyperHistogram() Constructor";
   
@@ -132,8 +140,13 @@ HyperHistogram::HyperHistogram(std::vector<TString> filename) :
 
 }
 
+/**
+Load an array of HyperHistograms from different files and merge them into a 
+disk resident HyperBinning stored at 'targetFilename'
+*/
 HyperHistogram::HyperHistogram(TString targetFilename, std::vector<TString> filename) :
-  HistogramBase(0)
+  HistogramBase(0),
+  _binning(0)
 {
 
   WELCOME_LOG << "Good day from the HyperHistogram() Constructor";
@@ -143,8 +156,11 @@ HyperHistogram::HyperHistogram(TString targetFilename, std::vector<TString> file
     ERROR_LOG << "The list of filenames you provided to HyperHistogram is empty" << std::endl;
   }
 
+  //Getting the binning type from the first file
+  TString binningType = getBinningType( filename.at(0) );
+
   INFO_LOG << "Loading HyperHistogram at: " << targetFilename << std::endl;
-  load(targetFilename, "DISKRES RECREATE");
+  loadEmpty(targetFilename, "DISKRES", binningType);
 
   for (int i = 0; i < nFiles; i++){
     INFO_LOG << "Loading and merging HyperHistogram at: " << filename.at(i) << std::endl;
@@ -157,11 +173,21 @@ HyperHistogram::HyperHistogram(TString targetFilename, std::vector<TString> file
 }
 
 
+HyperHistogram::HyperHistogram(const HyperHistogram& other) :
+  HistogramBase(other),
+  _binning( other._binning->clone() )
+{
+
+}
+
+
+
 /**
 Private constructor
 */
 HyperHistogram::HyperHistogram() :
-  HistogramBase(0)
+  HistogramBase(0),
+  _binning(0)
 {
   WELCOME_LOG << "Good day from the HyperHistogram() Constructor";
 }
@@ -257,7 +283,7 @@ Merge this histogram with another in a file
 */
 void HyperHistogram::merge( TString filenameother ){
 
-  HyperHistogram other(filenameother, "DISKRES");
+  HyperHistogram other(filenameother, "DISK");
   merge( other );
 
 }
@@ -289,12 +315,15 @@ void HyperHistogram::setContentsFromFunc(const HyperFunction& func){
 */
 void HyperHistogram::mergeBinsWithSameContent(){
   
+
   if ( _binning->getBinningType() != "HyperBinning" ){
     ERROR_LOG << "It is only possible to merge bins when using HyperBinning. Doing nothing." << std::endl;
     return;
   }
   
-  const HyperBinningMemRes& hyperBinning = dynamic_cast<const HyperBinningMemRes&>( getBinning() );
+  
+
+  const HyperBinning& hyperBinning = dynamic_cast<const HyperBinning&>( getBinning() );
 
   std::map<int, bool> volumeKept;
   for (int i = 0; i < hyperBinning.getNumHyperVolumes(); i++){  
@@ -371,8 +400,18 @@ void HyperHistogram::mergeBinsWithSameContent(){
   }
   
   //Create a new HyperVolumeBinning with the bins removed
+  HyperBinning* binningNew;
+  
 
-  HyperBinningMemRes binningNew;
+  if (hyperBinning.isDiskResident() == true){
+    binningNew = new HyperBinningDiskRes();
+    binningNew->load( hyperBinning.filename().ReplaceAll(".root", "_temp.root"), "RECREATE" );
+  }
+  else{
+    binningNew = new HyperBinningMemRes();
+  }
+
+  INFO_LOG << "Created a new HyperBinning for the reduced binning" << std::endl;
   
   int count = 0;
 
@@ -404,7 +443,7 @@ void HyperHistogram::mergeBinsWithSameContent(){
 
     }
     
-    binningNew.addHyperVolume(vol, newLinkedVols);
+    binningNew->addHyperVolume(vol, newLinkedVols);
 
 
     if (nLinked == 1){
@@ -421,19 +460,38 @@ void HyperHistogram::mergeBinsWithSameContent(){
   for (unsigned i = 0; i < primVolNums.size(); i++){
     int oldVolNum = primVolNums.at(i);
     int newVolNum = oldToNewVolumeNum[oldVolNum];
-    binningNew.addPrimaryVolumeNumber(newVolNum);
+    binningNew->addPrimaryVolumeNumber(newVolNum);
   }
 
-  HyperHistogram newHist(binningNew);
-  
+  INFO_LOG << "Filled the new binning with reduced bins" << std::endl;
+
+
+  HyperHistogram newHist(*binningNew);
+
+  INFO_LOG << "Made a new hitogram which will clone the binning" << std::endl;
+
   newHist.setContentsFromFunc(*this);
 
-  std::cout << "You could remove at least " << hyperBinning.getNumBins() - binningNew.getNumBins() << std::endl;
+  INFO_LOG << "You have managed to remove " << hyperBinning.getNumBins() - binningNew->getNumBins() << " bins with the same content" << std::endl;
   
-  if ( hyperBinning.getNumBins() - binningNew.getNumBins() > 0 ) newHist.mergeBinsWithSameContent();
+  if ( hyperBinning.getNumBins() - binningNew->getNumBins() > 0 ) newHist.mergeBinsWithSameContent();
+  
+  if (hyperBinning.isDiskResident() == true){
+    TString filenm = hyperBinning.filename();
+    delete _binning;
+    _binning = 0;
+    newHist.save( filenm );
 
-  *this = newHist;
+    load(filenm, "DISK");
+  }
+  else{
+    *this = newHist;
+  }  
   
+
+
+  delete binningNew;
+
 
 }
 
@@ -922,27 +980,46 @@ void HyperHistogram::load(TString filename, TString option){
   TString binningType = getBinningType(filename);
  
   if (binningType.Contains("HyperBinning")){
-    if (option.Contains("MEMRES" )) _binning = new HyperBinningMemRes ();
-    if (option.Contains("DISKRES")) _binning = new HyperBinningDiskRes();
+    
+    if (_binning != 0) {
+      delete _binning;
+      _binning = 0;
+    }
+
+    if (option.Contains("DISK")) _binning = new HyperBinningDiskRes();
+    else{
+      _binning = new HyperBinningMemRes();
+    }
+
   }
+
   if (binningType == ""){
-    ERROR_LOG << "I could not find any binning scheme in this file" << std::endl;
+    ERROR_LOG << "HyperHistogram::load - I could not find any binning scheme in this file" << std::endl;
   }
 
-  if (option.Contains("RECREATE")){
-    _binning = new HyperBinningDiskRes();
-    _binning->load(filename, "RECREATE");
-    this->resetBinContents(0);
-    INFO_LOG << "Finished making HyperBinningDiskRes" << std::endl;    
-  }
-  else{
-    _binning->load(filename, "READ");
-    this->loadBase(filename);
-  }
-
+  _binning->load(filename, "READ");
+  this->loadBase(filename);
 
 }
 
+void HyperHistogram::loadEmpty(TString filename, TString option, TString binningType){
+
+  if (binningType.Contains("HyperBinning")){
+
+    if (option.Contains("DISK")) _binning = new HyperBinningDiskRes();
+    else{
+      _binning = new HyperBinningMemRes();
+    }
+
+  }
+  if (binningType == ""){
+    ERROR_LOG << "HyperHistogram::loadEmpty - I could not find any binning scheme in this file" << std::endl;
+  }  
+
+  _binning->load(filename, "RECREATE");
+  this->resetBinContents(0);
+
+}
 /**
 Get the volume of a HyperVolume bin
 */
@@ -962,11 +1039,12 @@ HyperHistogram::~HyperHistogram(){
     diskResidentBinning = _binning->isDiskResident();
     filename            = _binning->filename();
     delete _binning;
+    _binning = 0;
   }
   
   if (diskResidentBinning){
 
-    TFile *file=new TFile(filename,"update");
+    TFile *file = new TFile(filename, "update");
     std::string object_to_remove="HistogramBase";
     gDirectory->Delete(object_to_remove.c_str());
     

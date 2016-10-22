@@ -1,7 +1,8 @@
 #include "HyperBinningDiskRes.h"
 
 
-///The only constructor
+///The empty constuctor. Must call the load function to associate this
+///object to a file
 HyperBinningDiskRes::HyperBinningDiskRes() :
   _file(0),
   _writeable(false),
@@ -9,14 +10,37 @@ HyperBinningDiskRes::HyperBinningDiskRes() :
   _cuboid(0),
   _linkedBins(new std::vector<int>()),
   _volumeNumber(-1),
-  _currentEntry(-1)
+  _currentEntry(-1),
+  _treePrimVol(0),
+  _primVolNum(-1)
 {
-  setBinningType("HyperBinningDiskRes");
   WELCOME_LOG << "Hello from the HyperBinningDiskRes() Constructor";
 }
 
+///The copy constuctor. Essentially just calls the empty constuctor, then
+///loads from the same file as the other binning.
+HyperBinningDiskRes::HyperBinningDiskRes(const HyperBinningDiskRes& other) :
+  _file(0),
+  _writeable(false),
+  _tree(0),
+  _cuboid(0),
+  _linkedBins(new std::vector<int>()),
+  _volumeNumber(-1),
+  _currentEntry(-1),
+  _treePrimVol(0),
+  _primVolNum(-1)
+{ 
+  if (other._writeable == true){
+    other._file->Write();
+  }  
+  load(other._file->GetName(), "READ");
+}
+
+
 ///Set the dimension of the HyperBinningDiskRes. This can only be 
-///called once, when it is known what dimesnion it is.
+///called once, when it is known what the dimension is i.e. either
+///when loading from a file, or the first time a HyperVolume is 
+///added to an empty file
 void HyperBinningDiskRes::setDimension(int dim){
   
   if (getDimension() == 0){
@@ -26,81 +50,53 @@ void HyperBinningDiskRes::setDimension(int dim){
 
 }
 
-
+///Get a HyperVolume from the tree and load it into memory
+///
 void HyperBinningDiskRes::getEntry(int volumeNumber) const{
   if (_tree == 0){
-    ERROR_LOG << "HyperBinningDiskRes::getEntry(int volumeNumber), tree doesn't exist" << std::endl; 
+    ERROR_LOG << "HyperBinningDiskRes::getEntry - tree doesn't exist" << std::endl; 
     return;
   }
-
   if ( _currentEntry != volumeNumber ){
     _currentEntry = volumeNumber;
     _tree->GetEntry(volumeNumber);
   }
 }
 
+///Get a HyperVolume from its volume number
 HyperVolume HyperBinningDiskRes::getHyperVolume(int volumeNumber) const{
   getEntry(volumeNumber);
   return HyperVolume(_cuboid);
 } 
 
+///Get all HyperVolumes linked to a specific volume number i.e.
+///from the binning hiearcy
 std::vector<int> HyperBinningDiskRes::getLinkedHyperVolumes( int volumeNumber ) const{
   getEntry(volumeNumber);
   return *_linkedBins;
 }
 
-
-
-
-/// This function will merge the two binnings. It assumes that the first
-///
-void HyperBinningDiskRes::mergeBinnings( const BinningBase& other ){
-  
-  if ( other.getBinningType().Contains("HyperBinning") == false){
-    ERROR_LOG << "You can only merge a HyperBinningDiskRes with another HyperBinning" << std::endl;
-    return;
-  }
-  
-  const HyperBinning& otherHyperBinning = dynamic_cast<const HyperBinning&>(other);
-
-  int nVolumes      = getNumHyperVolumes();
-  int nVolumesOther = otherHyperBinning.getNumHyperVolumes();
-
-  //this means every volume number in 'otherHyperBinning' needs to be increased by nVolumes.
-  //This is important for linked bins and primary volume numbers!!
-
-  for (int i = 0; i < nVolumesOther; i++){
-    HyperVolume vol = otherHyperBinning.getHyperVolume(i);
-
-    std::vector<int> linkedVolumes = otherHyperBinning.getLinkedHyperVolumes(i);
-
-    for (unsigned int j = 0; j < linkedVolumes.size(); j++){
-      linkedVolumes.at(j) += nVolumes;
-    }
-
-    addHyperVolume(vol, linkedVolumes);
-  }
-  
-  int nPrimaryBinsOther = otherHyperBinning.getNumPrimaryVolumes();
-
-  for (int i = 0; i < nPrimaryBinsOther; i++){
-    int primaryVolumeNumber = getPrimaryVolumeNumber(i);
-    primaryVolumeNumber += nVolumes;
-    addPrimaryVolumeNumber(primaryVolumeNumber);
-  }
-
-  _changed = true;
-
-}
-
-
-
-
+///Create a clone of the object and return a pointer to it.
 BinningBase* HyperBinningDiskRes::clone() const{
+  
+  BinningBase* ret = dynamic_cast<BinningBase*>(new HyperBinningDiskRes());
 
-  return dynamic_cast<BinningBase*>(new HyperBinningDiskRes(*this));
+  if (_file != 0) {
 
-}
+    TString filenm = filename();
+    _file->cd();
+
+    if (_writeable == true){
+      _file->Write();
+    }
+    
+    ret->load(filenm, "READ");
+
+  }
+
+  return ret;
+
+} 
 
 
 ///Add a primary volume number
@@ -108,9 +104,13 @@ BinningBase* HyperBinningDiskRes::clone() const{
 void HyperBinningDiskRes::addPrimaryVolumeNumber(int volumeNumber){
 
   if (_writeable == false){
-    ERROR_LOG << "You cannot wirte to this Disk Resident HyperBinning - you must have opened in READ mode" << std::endl;
+    ERROR_LOG << "HyperBinningDiskRes::addPrimaryVolumeNumber - Cannot write, you must have opened in READ mode" << std::endl;
     return;
   }
+  if (_treePrimVol == 0){
+    ERROR_LOG << "HyperBinningDiskRes::addPrimaryVolumeNumber - Cannot find tree" << std::endl;
+    return;
+  }  
 
   _primVolNum = volumeNumber;
   _treePrimVol->Fill();
@@ -118,7 +118,7 @@ void HyperBinningDiskRes::addPrimaryVolumeNumber(int volumeNumber){
 
 
 
-///get the number of HyperVolumes
+///Get the number of HyperVolumes (this is not the number of bins)
 ///
 int HyperBinningDiskRes::getNumHyperVolumes() const{
   if (_tree == 0){
@@ -128,36 +128,25 @@ int HyperBinningDiskRes::getNumHyperVolumes() const{
 }  
 
 
-
-
-
-///Save the HyperBinningDiskRes to a TFile.
+///Add a HyperVolume and its linked bins to the HyperBinning
 ///
-void HyperBinningDiskRes::save(TString filename) const{
-  ERROR_LOG << "Cannot save a Disk Resident HyperBinning to " << filename;
-  ERROR_LOG << " becasue it already exists on disk!" << std::endl;
-}
-
-///Save the HyperBinningDiskRes to the open (and in scope) TFile.
-///
-void HyperBinningDiskRes::save() const{
-  
-
-}
-
 bool HyperBinningDiskRes::addHyperVolume(const HyperVolume& hyperVolume, std::vector<int> linkedVolumes){
   
   if (_writeable == false){
-    ERROR_LOG << "You cannot wirte to this Disk Resident HyperBinning - you must have opened in READ mode" << std::endl;
+    ERROR_LOG << "HyperBinningDiskRes::addHyperVolume - Cannot write, you must have opened in READ mode" << std::endl;
     return false;
   }
-  if (getDimension() == 0){
+
+  //If dimension hasn't been set, and it's a writeable, we can now
+  //set the dimesnion and create the tree
+
+  if (getDimension() == 0 && _writeable == true){
     setDimension(hyperVolume.getDimension());
     createHyperBinningTree();
   }
   
   if (_tree == 0){
-    ERROR_LOG << "HyperBinningDiskRes::addHyperVolume - there isn't a tree to write to" << std::endl;
+    ERROR_LOG << "HyperBinningDiskRes::addHyperVolume - Cannot find tree" << std::endl;
     return false;
   }
 
@@ -173,16 +162,18 @@ bool HyperBinningDiskRes::addHyperVolume(const HyperVolume& hyperVolume, std::ve
 }
 
 
-
-
+///Get the number of primary volumes
+///
 int HyperBinningDiskRes::getNumPrimaryVolumes  () const{
   if (_treePrimVol == 0) return 0;
   return _treePrimVol->GetEntries();
 }
 
+///Get the primary volume numbers 
+///
 int HyperBinningDiskRes::getPrimaryVolumeNumber(int i) const{
   if (_treePrimVol == 0) {
-    ERROR_LOG << "HyperBinningDiskRes::getPrimaryVolumeNumber(i). No primary volume tree" << std::endl;
+    ERROR_LOG << "HyperBinningDiskRes::getPrimaryVolumeNumber - No tree found" << std::endl;
   }
   _treePrimVol->GetEntry(i);
   return _primVolNum;
@@ -211,8 +202,9 @@ void HyperBinningDiskRes::loadHyperBinningTree(){
     _tree->SetBranchAddress(highCornerName, &_cuboid.getHighCorner().at(i) );
   }
   
+  //_tree->SetMaxVirtualSize(1000);
   _currentEntry = -1;
-  _changed = true;
+  _changed      = true;
 
 }
 
@@ -223,7 +215,7 @@ void HyperBinningDiskRes::loadPrimaryVolumeTree(){
   _treePrimVol = dynamic_cast<TTree*>( _file->Get("PrimaryVolumeNumbers") );
   
   if (_treePrimVol == 0){
-    ERROR_LOG << "Could not open TTree in HyperBinningDiskRes::loadPrimaryVolumeNumbers()";
+    ERROR_LOG << "HyperBinningDiskRes::loadPrimaryVolumeNumbers - could not open TTree";
     return;
   }
 
@@ -233,18 +225,22 @@ void HyperBinningDiskRes::loadPrimaryVolumeTree(){
 
 void HyperBinningDiskRes::createHyperBinningTree(){
   
-  INFO_LOG << "Creating a tree to store DiskRes HyperBinning" << std::endl;
-
   _file->cd();
   _tree = new TTree("HyperBinning", "HyperBinning");
+
+  if (_treePrimVol == 0){
+    ERROR_LOG << "HyperBinningDiskRes::createHyperBinningTree - could not open TTree";
+    return;
+  }
 
   //Figure out how many dimensions there are from the tree
   int dim = getDimension();
   if (dim == 0){
     ERROR_LOG << "The dimesion has not yet been set, so I cannot createHyperBinningTree!!" << std::endl;
+    return;
   }
 
-  _tree->Branch("binNumber" , &_volumeNumber);
+  _tree->Branch("binNumber" , &_volumeNumber );
   _tree->Branch("linkedBins", &_linkedBins   );
 
   for (int i = 0; i < dim; i++){
@@ -254,6 +250,9 @@ void HyperBinningDiskRes::createHyperBinningTree(){
     _tree->Branch(highCornerName, &_cuboid.getHighCorner().at(i) );
   }
   
+  //random access is really slow. Thought this might help
+  //_tree->SetMaxVirtualSize(1000);
+
   _currentEntry = -1;
   _changed = true;
 
@@ -263,6 +262,12 @@ void HyperBinningDiskRes::createPrimaryVolumeTree(){
 
   _file->cd();
   _treePrimVol = new TTree("PrimaryVolumeNumbers", "PrimaryVolumeNumbers");
+
+  if (_treePrimVol == 0){
+    ERROR_LOG << "HyperBinningDiskRes::createPrimaryVolumeTree - could not open TTree";
+    return;
+  }
+
   _treePrimVol->Branch("volumeNumber", &_primVolNum);
 
 }
@@ -271,7 +276,12 @@ void HyperBinningDiskRes::createPrimaryVolumeTree(){
 ///
 void HyperBinningDiskRes::load(TString filename, TString option){
   
-  if (option == "UPDATE" || option == "RECREATE") {_writeable = true;}
+  _writeable = false;
+  if (option == "UPDATE" || option == "RECREATE") {
+    _writeable = true;
+  }
+  
+  if (_file != 0) _file->Close();
 
   _file = new TFile(filename, option);
   
@@ -285,7 +295,9 @@ void HyperBinningDiskRes::load(TString filename, TString option){
     loadPrimaryVolumeTree  ();
   }
   else if (option == "RECREATE"){
-    //createHyperBinningTree   ();
+    //if we're opening a new file, we don't know the dimension yet.
+    //wait until the dimension is set explicitly with setDimension().
+    //createHyperBinningTree   (); 
     createPrimaryVolumeTree  ();    
   }
   else{
@@ -301,6 +313,10 @@ bool HyperBinningDiskRes::isDiskResident() const{
   return true;
 }
 TString HyperBinningDiskRes::filename() const{
+  if (_file == 0){
+    ERROR_LOG << "HyperBinningDiskRes::filename - there is no file associated to this object yet" << std::endl;
+    return "";
+  }
   return _file->GetName();
 }
 
@@ -309,11 +325,11 @@ TString HyperBinningDiskRes::filename() const{
 ///
 HyperBinningDiskRes::~HyperBinningDiskRes(){
   GOODBYE_LOG << "Goodbye from the HyperBinningDiskRes() Constructor";
+
   if (_file != 0) {
-    INFO_LOG << "Closing HyperBinningDiskRes " << _file->GetName() << std::endl;
     _file->cd();
     if (_writeable == true){
-      _tree->Write();
+      _tree       ->Write();
       _treePrimVol->Write();
     }
     _file->Close();

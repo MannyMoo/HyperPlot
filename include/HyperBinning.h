@@ -160,6 +160,10 @@ class HyperBinning : public BinningBase {
 
   int getHyperBinningDimFromTree(TTree* tree);
 
+  void createBranches       (TTree* tree, int* binNumber, double* lowCorner, double* highCorner, std::vector<int>** linkedBins) const;
+  void saveHyperVolumeToTree(TTree* tree, double* lowCorner, double* highCorner, const HyperVolume& hyperVolume) const;
+  void savePrimaryVolumeNumbers() const;
+
   public:
   
   HyperBinning();
@@ -170,41 +174,44 @@ class HyperBinning : public BinningBase {
   int getHyperVolumeNumber(int binNumber) const;
   int getBinNum(int volumeNumber) const;
 
-  std::vector<int> getPrimaryVolumeNumbers() const;
+  virtual std::vector<int> getPrimaryVolumeNumbers() const;
 
   virtual ~HyperBinning();
 
-  //Functions that need to be implemented in derived class
+  /* Virtual functions that need to implemented in any derrived class */
 
   virtual void setDimension(int dim);
 
   virtual std::vector<int> getLinkedHyperVolumes( int volumeNumber ) const = 0;
   virtual HyperVolume getHyperVolume(int volumeNumber) const = 0; /**< get one of the HyperVolumes */
   virtual void addPrimaryVolumeNumber(int volumeNumber) = 0;
-  //virtual bool addHyperVolume(const HyperVolume& hyperVolume, std::vector<int> linkedVolumes = std::vector<int>(0, 0)) = 0;
+  virtual bool addHyperVolume(const HyperVolume& hyperVolume, std::vector<int> linkedVolumes = std::vector<int>(0, 0)) = 0;
   virtual int getNumHyperVolumes() const = 0;  
 
   virtual int getNumPrimaryVolumes  () const = 0;  
   virtual int getPrimaryVolumeNumber(int i) const = 0;  
 
-
-  //Functions we are required to implement from BinningBase
+  /* Virtual functions that need to implemented from BinningBase */
+  /*    These will be implemented in the derived classes */
 
   virtual void load(TString filename, TString option = "READ") = 0;
-  virtual void save(TString filename) const = 0;
-  virtual void save() const = 0; 
+  virtual BinningBase* clone() const = 0;
+
+  /*    These will be implemented in this class */
+
+  virtual void save(TString filename) const;
+  virtual void save() const; 
+
+  virtual void mergeBinnings( const BinningBase& other );
 
   virtual int getNumBins() const;
   virtual int getBinNum(const HyperPoint& coords) const;
 
   virtual HyperVolume getBinHyperVolume(int binNumber) const;
 
-  virtual void mergeBinnings( const BinningBase& other ) = 0;
-
   virtual HyperPoint  getAverageBinWidth() const;
   virtual HyperCuboid getLimits()          const;
 
-  virtual BinningBase* clone() const = 0;
 
 
 };

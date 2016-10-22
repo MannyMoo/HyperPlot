@@ -87,6 +87,8 @@ class HyperHistogram : public HistogramBase, public HyperFunction {
   HyperHistogram(std::vector<TString> filename);
   HyperHistogram(TString targetFilename, std::vector<TString> filename);
 
+  HyperHistogram(const HyperHistogram& other);
+
   
   void setNames( HyperName names );
   HyperName getNames() const;
@@ -134,8 +136,10 @@ class HyperHistogram : public HistogramBase, public HyperFunction {
 
   TString getBinningType(TString filename);
 
-  void load(TString filename, TString option = "MEMRES READ");
-  
+  void load     (TString filename, TString option = "MEMRES READ");
+  void loadEmpty(TString filename, TString option = "MEMRES READ", TString binningType = "HyperBinning");
+
+
   void setContentsFromFunc(const HyperFunction& func);
   
   void printFull() const;
