@@ -159,8 +159,11 @@ HyperHistogram::HyperHistogram(TString targetFilename, std::vector<TString> file
   //Getting the binning type from the first file
   TString binningType = getBinningType( filename.at(0) );
 
-  INFO_LOG << "Loading HyperHistogram at: " << targetFilename << std::endl;
-  loadEmpty(targetFilename, "DISKRES", binningType);
+  INFO_LOG << "Creating HyperHistogram at: " << targetFilename << " with binning type " << binningType <<std::endl;
+  loadEmpty(targetFilename, "DISKRES", binningType );
+
+  int nResBins = estimateCapacity(filename, binningType);
+  INFO_LOG << "I estimate there will be " <<  nResBins << " in total - resizing the Histogram accordingly" << std::endl;
 
   for (int i = 0; i < nFiles; i++){
     INFO_LOG << "Loading and merging HyperHistogram at: " << filename.at(i) << std::endl;
@@ -170,6 +173,40 @@ HyperHistogram::HyperHistogram(TString targetFilename, std::vector<TString> file
   //This inherets from a HyperFunction. Although non-essential, it's useful for
   //the function to have some limits for it's domain.
   setFuncLimits( getLimits() );  
+}
+
+
+int HyperHistogram::estimateCapacity(std::vector<TString> filename, TString binningType){
+
+  int nbins = 0;
+  int nvols = 0;
+
+  for (unsigned i = 0; i < filename.size(); i++){
+    TFile* file = new TFile(filename.at(i), "READ");
+    if (file == 0){
+      ERROR_LOG << "HyperHistogram::estimateCapacity - " << filename.at(i) << " does not exist" << std::endl; 
+      return 0;
+    }
+    TTree* hist = dynamic_cast<TTree*>( file->Get(binningType) );
+    TTree* base = dynamic_cast<TTree*>( file->Get("HistogramBase") );
+    if (hist == 0){
+      ERROR_LOG << "HyperHistogram::estimateCapacity - " << filename.at(i) << " does not contain tree " << binningType << std::endl; 
+      return 0;
+    }
+    if (base == 0){
+      ERROR_LOG << "HyperHistogram::estimateCapacity - " << filename.at(i) << " does not contain tree HistogramBase" << std::endl; 
+      return 0;
+    }  
+    nbins += base->GetEntries();
+    nvols += hist->GetEntries();
+    file->Close();
+  }
+  
+  reserveCapacity(nbins);
+  _binning->reserveCapacity(nvols);
+
+  return nbins;
+
 }
 
 
@@ -957,7 +994,7 @@ TString HyperHistogram::getBinningType(TString filename){
     return "";
   }
 
-  TTree* tree = (TTree*)file->Get("HyperBinning");
+  TTree* tree  = (TTree*)file->Get("HyperBinning");
 
   if (tree != 0){
     file->Close();

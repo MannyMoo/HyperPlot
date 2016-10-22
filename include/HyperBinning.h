@@ -191,6 +191,9 @@ class HyperBinning : public BinningBase {
   virtual int getNumPrimaryVolumes  () const = 0;  
   virtual int getPrimaryVolumeNumber(int i) const = 0;  
 
+  virtual void reserveCapacity(int nElements); 
+
+
   /* Virtual functions that need to implemented from BinningBase */
   /*    These will be implemented in the derived classes */
 

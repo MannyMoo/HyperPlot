@@ -98,6 +98,8 @@ class HistogramBase {
   
   virtual double getBinVolume(int bin) const;
   double getFrequencyDensity(int bin) const;
+  
+  void reserveCapacity(int nElements); 
 
   void makeFrequencyDensity();
   

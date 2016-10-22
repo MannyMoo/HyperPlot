@@ -25,6 +25,13 @@ void HistogramBase::resetBinContents(int nBins){
   _sumW2       = std::vector<double>(nBins+1,0.0);
 }
 
+///
+void HistogramBase::reserveCapacity(int nElements){
+  _binContents.reserve(nElements);
+  _sumW2      .reserve(nElements);
+}
+
+
 ///Merge one HistogramBase with another
 ///
 void HistogramBase::merge( const HistogramBase& other ){
@@ -35,6 +42,10 @@ void HistogramBase::merge( const HistogramBase& other ){
   double overflowSumW2 = _sumW2.at(_nBins);
   overflowSumW2 += other._sumW2.at(other._nBins);  
   
+  int capacityNeeded = _nBins + other._nBins + 1;
+
+  reserveCapacity(capacityNeeded);
+
   _binContents.at(_nBins) = other._binContents.at(0);
   _sumW2      .at(_nBins) = other._sumW2      .at(0);
   

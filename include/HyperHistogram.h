@@ -102,6 +102,9 @@ class HyperHistogram : public HistogramBase, public HyperFunction {
   void merge( TString filenameother );
 
   
+  int estimateCapacity(std::vector<TString> filename, TString binningType);
+
+
   //Project the HyperHistograms down into one dimension
 
   void project(TH1D* histogram, const HyperCuboid& cuboid, double content, int dimension) const;

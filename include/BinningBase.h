@@ -85,6 +85,8 @@ class BinningBase {
 
   virtual HyperPoint getAverageBinWidth() const = 0;
   virtual HyperCuboid getLimits() const = 0;
+
+  virtual void reserveCapacity(int nElements) = 0; 
   
 
 };

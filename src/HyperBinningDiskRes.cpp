@@ -320,6 +320,12 @@ TString HyperBinningDiskRes::filename() const{
   return _file->GetName();
 }
 
+void HyperBinningDiskRes::reserveCapacity(int nElements){
+  HyperBinning::reserveCapacity(nElements);  
+  
+}
+
+
 
 ///Destructor
 ///

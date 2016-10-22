@@ -119,6 +119,8 @@ class HyperBinningDiskRes : public HyperBinning {
 
   //Functions we are required to implement from HyperBinning
 
+  virtual void reserveCapacity(int nElements);
+
   virtual void setDimension(int dim);
 
   virtual void addPrimaryVolumeNumber(int volumeNumber);

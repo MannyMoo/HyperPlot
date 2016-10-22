@@ -245,6 +245,12 @@ void HyperBinningMemRes::load(TString filename, TString option){
 
 }
 
+void HyperBinningMemRes::reserveCapacity(int nElements){
+  HyperBinning::reserveCapacity(nElements);
+  _hyperVolumes      .reserve(nElements);
+  _linkedHyperVolumes.reserve(nElements);  
+}
+
 ///Destructor
 ///
 HyperBinningMemRes::~HyperBinningMemRes(){

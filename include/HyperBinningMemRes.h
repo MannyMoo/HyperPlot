@@ -152,6 +152,9 @@ class HyperBinningMemRes : public HyperBinning {
 
   //Functions we are required (or choose to) to implement (override) from HyperBinning
 
+  virtual void reserveCapacity(int nElements);
+
+
   virtual std::vector<int> getPrimaryVolumeNumbers() const;
 
   virtual void setDimension(int dim);

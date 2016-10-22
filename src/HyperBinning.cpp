@@ -321,6 +321,14 @@ HyperPoint HyperBinning::getAverageBinWidth() const{
 }
 
 
+void HyperBinning::reserveCapacity(int nElements){
+
+  _binNum                  .reserve(nElements);
+  _hyperVolumeNumFromBinNum.reserve(nElements);
+
+}
+
+
 
 /// This function will merge the two binnings. It assumes that the first
 ///
@@ -333,11 +341,13 @@ void HyperBinning::mergeBinnings( const BinningBase& other ){
   
   const HyperBinning& otherHyperBinning = dynamic_cast<const HyperBinning&>(other);
 
-  int nVolumes      = getNumHyperVolumes();
+  int nVolumes      =                   getNumHyperVolumes();
   int nVolumesOther = otherHyperBinning.getNumHyperVolumes();
   //INFO_LOG << nVolumes << ", " << nVolumesOther << std::endl;
   //this means every volume number in 'otherHyperBinning' needs to be increased by nVolumes.
   //This is important for linked bins and primary volume numbers!!
+  
+  reserveCapacity(nVolumes + nVolumesOther);
 
   for (int i = 0; i < nVolumesOther; i++){
     HyperVolume vol = otherHyperBinning.getHyperVolume(i);
