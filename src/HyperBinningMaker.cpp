@@ -1154,7 +1154,9 @@ HyperHistogram* HyperBinningMaker::getHyperBinningHistogram() const{
     histogram->setBinError  (i, double( sqrt(_hyperPointSets.at(volumeNumber).getSumW2() ) ) );
   }
   
-  if (s_printBinning == true) INFO_LOG << "Made HyperHistogram"<<std::endl;
+  if (s_printBinning == true) {
+    INFO_LOG << "Made HyperHistogram"<<std::endl;
+  }
   
   histogram->setNames(_names);
 

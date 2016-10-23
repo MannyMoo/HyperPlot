@@ -79,9 +79,11 @@ HyperHistogram::HyperHistogram(
 
   HyperBinningMaker* binnningMaker = algSetup.getHyperBinningMaker(binningRange, points);
   binnningMaker->makeBinning();
- 
-  *this = *binnningMaker->getHyperBinningHistogram();
-
+  
+  HyperHistogram* hist = binnningMaker->getHyperBinningHistogram(); 
+  
+  *this = *hist;
+  delete hist;
   delete binnningMaker;
 
   //This inherets from a HyperFunction. Although non-essential, it's useful for
@@ -89,6 +91,17 @@ HyperHistogram::HyperHistogram(
   setFuncLimits( getLimits() );
 
 }
+
+HyperHistogram& HyperHistogram::operator=(const HyperHistogram& other){
+
+  HistogramBase::operator=(other);
+  HyperFunction::operator=(other);
+
+  _binning = other._binning->clone();
+  return *this;
+
+}
+
 
 /**
   Load a HyperHistogram from filename. If
@@ -212,11 +225,11 @@ int HyperHistogram::estimateCapacity(std::vector<TString> filename, TString binn
 
 HyperHistogram::HyperHistogram(const HyperHistogram& other) :
   HistogramBase(other),
+  HyperFunction(other),
   _binning( other._binning->clone() )
 {
 
 }
-
 
 
 /**
@@ -300,6 +313,8 @@ Merge two HyperHistograms
 */
 void HyperHistogram::merge( const HistogramBase& other ){
   
+  //INFO_LOG << "Starting HyperHistogram::merge" <<std::endl;
+
   const HyperHistogram* histOther = dynamic_cast<const HyperHistogram*>(&other);
 
   if (histOther == 0){
@@ -310,8 +325,22 @@ void HyperHistogram::merge( const HistogramBase& other ){
 
   _binning->mergeBinnings( histOther->getBinning() );
   HistogramBase::merge( other );
+  
+  //I do this so that getLimits doesn't have to be 
+  //called (which will update the cache). Will speed
+  //things up I hope
 
-  setFuncLimits( getLimits() );
+  HyperCuboid a = getFuncLimits();
+  HyperCuboid b = histOther->getFuncLimits();
+
+  HyperVolume vol( _binning->getDimension() );
+  if (a.getDimension() != 0) vol.push_back(a);
+  if (b.getDimension() != 0) vol.push_back(b);
+
+  setFuncLimits( vol.getLimits() );
+
+  //INFO_LOG << "Ending HyperHistogram::merge" <<std::endl;
+
 
 }
 

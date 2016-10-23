@@ -27,8 +27,8 @@ void HistogramBase::resetBinContents(int nBins){
 
 ///
 void HistogramBase::reserveCapacity(int nElements){
-  _binContents.reserve(nElements);
-  _sumW2      .reserve(nElements);
+  _binContents.reserve(nElements+1);
+  _sumW2      .reserve(nElements+1);
 }
 
 

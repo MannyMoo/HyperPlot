@@ -89,6 +89,8 @@ class HyperHistogram : public HistogramBase, public HyperFunction {
 
   HyperHistogram(const HyperHistogram& other);
 
+  HyperHistogram& operator=(const HyperHistogram& other);
+
   
   void setNames( HyperName names );
   HyperName getNames() const;

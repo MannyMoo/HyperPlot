@@ -432,7 +432,7 @@ void HyperPoint::print(std::ostream& os, int endline) const{
   for(int i = 0; i < (size() - 1); i++){
     oss << std::setw(10) << std::left << _coords.at(i) << ", ";
   }
-  oss << std::setw(10) << std::left << _coords.at(size() - 1);
+  if (size() != 0) oss << std::setw(10) << std::left << _coords.at(size() - 1);
   oss << ")";    
   
   this->printWeight(oss, 0);

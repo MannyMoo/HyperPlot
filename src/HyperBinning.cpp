@@ -205,6 +205,8 @@ int HyperBinning::getHyperVolumeNumber(int binNumber) const{
 ///_binNum, _hyperVolumeNumFromBinNum, _averageBinWidth,
 /// and _minmax.
 void HyperBinning::updateCash() const{
+  
+  //INFO_LOG << "Updating cache" << std::endl;
 
   //note the ordering of theses is important...
   //possilbe infinite loops
@@ -334,6 +336,8 @@ void HyperBinning::reserveCapacity(int nElements){
 ///
 void HyperBinning::mergeBinnings( const BinningBase& other ){
   
+  //INFO_LOG << "Starting HyperBinning::mergeBinnings" << std::endl;
+
   if ( other.getBinningType().Contains("HyperBinning") == false){
     ERROR_LOG << "You can only merge a HyperBinning with another HyperBinning" << std::endl;
     return;
@@ -343,7 +347,7 @@ void HyperBinning::mergeBinnings( const BinningBase& other ){
 
   int nVolumes      =                   getNumHyperVolumes();
   int nVolumesOther = otherHyperBinning.getNumHyperVolumes();
-  //INFO_LOG << nVolumes << ", " << nVolumesOther << std::endl;
+
   //this means every volume number in 'otherHyperBinning' needs to be increased by nVolumes.
   //This is important for linked bins and primary volume numbers!!
   
@@ -365,12 +369,14 @@ void HyperBinning::mergeBinnings( const BinningBase& other ){
 
   for (int i = 0; i < nPrimaryBinsOther; i++){
     int primaryVolumeNumber = otherHyperBinning.getPrimaryVolumeNumber(i);
-    //INFO_LOG << primaryVolumeNumber << ", " << primaryVolumeNumber + nVolumes << std::endl;
     primaryVolumeNumber += nVolumes;
     addPrimaryVolumeNumber(primaryVolumeNumber);
   }
 
   _changed = true;
+
+  //INFO_LOG << "Ending HyperBinning::mergeBinnings" << std::endl;
+
 
 }
 

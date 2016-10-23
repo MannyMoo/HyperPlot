@@ -158,6 +158,7 @@ bool HyperBinningDiskRes::addHyperVolume(const HyperVolume& hyperVolume, std::ve
     _tree->Fill();
   }
   
+  _changed = true;
   return true;
 }
 
@@ -339,7 +340,11 @@ HyperBinningDiskRes::~HyperBinningDiskRes(){
       _treePrimVol->Write();
     }
     _file->Close();
+    _file = 0;
   }
+
+  delete _linkedBins;
+
 }
 
 

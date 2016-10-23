@@ -179,6 +179,18 @@ double HyperVolume::getMax(int dimension) const{
 
 }
 
+///get the limits of the HyperVolume
+///
+HyperCuboid HyperVolume::getLimits() const{
+  HyperCuboid limits(getDimension());
+  for (int i = 0; i < getDimension(); i++){
+    limits.getLowCorner ().at(i) = getMin(i);
+    limits.getHighCorner().at(i) = getMax(i);
+  }
+  return limits;
+}
+
+
 ///Print the HyperCuboids that define the HyperVolume
 ///
 void HyperVolume::print(std::ostream& os, int endline) const{

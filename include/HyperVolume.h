@@ -76,6 +76,9 @@ class HyperVolume {
   double getMin(int dimension) const;
   double getMax(int dimension) const;
   
+  HyperCuboid getLimits() const;
+
+
   HyperVolume splitAll(int dimension, double fractionalSplitPoint);
 
   ~HyperVolume();
