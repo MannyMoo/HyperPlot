@@ -116,7 +116,11 @@ int HyperBinning::getBinNum(const HyperPoint& coords) const{
 ///of a TTree is incredibly slow. 
 std::vector<int> HyperBinning::getBinNum(const HyperPointSet& coords) const{
   
-  return getBinNumAlt(coords);
+  int nPrimVols = getNumPrimaryVolumes();
+
+  if (nPrimVols > 0){
+    return getBinNumAlt(coords);
+  }
 
   bool printInfo = false;
   if (getNumHyperVolumes() > 30000 && isDiskResident() == true) {
@@ -145,7 +149,6 @@ std::vector<int> HyperBinning::getBinNum(const HyperPointSet& coords) const{
   //falls into it. If it does, fill the linkedVols with that volume number.
   //If a coord doesn't fall into any of the primary volumes, set the binNumber to -1
   
-  int nPrimVols = getNumPrimaryVolumes();
   
   if (nPrimVols != 0){
 
@@ -270,15 +273,20 @@ std::vector<int> HyperBinning::getBinNum(const HyperPointSet& coords) const{
 ///up drastically if the binning is disk resident, because random access
 ///of a TTree is incredibly slow. 
 std::vector<int> HyperBinning::getBinNumAlt(const HyperPointSet& coords) const{
-  
+
+  //Call getNumBins to make sure the cache is up to date. Not needed,
+  //but if the cache updates during the below code it messes up the
+  //loading bar.
+  getNumBins(); 
+
+
   bool printInfo = false;
-  if (getNumHyperVolumes() > 30000 && isDiskResident() == true) {
+  if (getNumHyperVolumes() > 2e6 && isDiskResident() == true) {
     INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this HyperBinning::getBinNum(const HyperPointSet& coords)" << std::endl;    
     printInfo = true;
   }
 
-
-  int nCoords = coords.size();
+  int nCoords  = coords.size();
   int nVolumes = getNumHyperVolumes();
   
   INFO_LOG << "Sorting " << nCoords << " HyperPoints into bins" << std::endl;
@@ -290,14 +298,9 @@ std::vector<int> HyperBinning::getBinNumAlt(const HyperPointSet& coords) const{
 
   std::vector<int> binNumberSet(nCoords, -2);
   std::vector< std::vector<int> > binsInVol(nVolumes, std::vector<int>() );
-  
-  //for (unsigned i = 0; i < linkedVolsSet.size(); i++){
-  //  linkedVolsSet.at(i).reserve(2);
-  //}
 
   //First loop over the primary volumes and see if the each coord
-  //falls into it. If it does, fill the linkedVols with that volume number.
-  //If a coord doesn't fall into any of the primary volumes, set the binNumber to -1
+  //falls into it. If it does, fill binsInVol with that coord number.
   
   int nPrimVols = getNumPrimaryVolumes();
   
@@ -319,20 +322,10 @@ std::vector<int> HyperBinning::getBinNumAlt(const HyperPointSet& coords) const{
           binsInVol.at(volNum).push_back(i);
         }
   
-  
       }    
   
     }
-    
-    //any points which don't have a linked bin (i.e. fall into a 
-    //primary volume, set the bin number to -1)
-    //for (int i = 0; i < nCoords; i++){
-    //    
-    //  if (linkedVolsSet.at(i).size() == 0){
-    //    binNumberSet.at(i) = -1;
-    //  }
-    //
-    //}  
+
 
   }
 
@@ -343,7 +336,7 @@ std::vector<int> HyperBinning::getBinNumAlt(const HyperPointSet& coords) const{
   }
   
   LoadingBar loadingBar(nVolumes);
-
+  
   for (int voli = 0; voli < nVolumes; voli++){
     
     if (printInfo){
@@ -356,7 +349,7 @@ std::vector<int> HyperBinning::getBinNumAlt(const HyperPointSet& coords) const{
     
     HyperVolume vol        = getHyperVolume       (voli);
     std::vector<int> links = getLinkedHyperVolumes(voli);
-    bool anyLinks          = (links.size() != 0);
+    int  numLinks          = links.size();
 
     for (int i = 0; i < nBinsInVol; i++){
       
@@ -365,12 +358,13 @@ std::vector<int> HyperBinning::getBinNumAlt(const HyperPointSet& coords) const{
         
       if ( vol.inVolume(coord) ){
         
-        if (anyLinks == false){
+        if (numLinks == 0){
           binNumberSet.at(coordNum) = getBinNum(voli);
         }
         else{
-          binsInVol.at(links.at(0)).push_back(coordNum);
-          binsInVol.at(links.at(1)).push_back(coordNum);
+          for (int j = 0; j < numLinks; j++){
+            binsInVol.at(links.at(j)).push_back(coordNum);
+          }
         }
       } 
 
@@ -462,7 +456,7 @@ int HyperBinning::getNumBins() const{
 ///the _hyperVolumeNumFromBinNum variable to find the HyperVolume number
 ///from the bin number, then returns that HyperVolume.
 HyperVolume HyperBinning::getBinHyperVolume(int binNumber) const{
-  
+
   return getHyperVolume( getHyperVolumeNumber(binNumber) );
 
 }
@@ -491,44 +485,10 @@ int HyperBinning::getHyperVolumeNumber(int binNumber) const{
 /// and _minmax.
 void HyperBinning::updateCash() const{
   
-  //INFO_LOG << "Updating cache" << std::endl;
-
-  //note the ordering of theses is important...
-  //possilbe infinite loops
-  
   _averageBinWidth         .changed();
   _minmax                  .changed();
   _binNum                  .changed();
   _hyperVolumeNumFromBinNum.changed();
-  //_changed = false;
-  
-//  bool printCacheInfo = false;
-//  if (getNumHyperVolumes() > 2e6 && isDiskResident() == true) {
-//    INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this cache update." << std::endl;    
-//    printCacheInfo = true;
-//  }
-//
-//  if (printCacheInfo) {
-//    INFO_LOG << "First I'm updating the bin numbering that lets me quickly associate volumes to bins and vice versa" << std::endl;
-//  }
-//
-//  updateBinNumbering();
-//
-//  if (printCacheInfo) {
-//    INFO_LOG << "Now I'm finding the limits of the binning" << std::endl;
-//  }
-//
-//  updateMinMax();
-//
-//  if (printCacheInfo) {
-//    INFO_LOG << "Now I'm finding average bin widths" << std::endl;
-//  }
-//
-//  updateAverageBinWidth();
-//
-//  if (printCacheInfo) {
-//    INFO_LOG << "The cache has successfully been updated!" << std::endl;
-//  }
 
 }
 
@@ -610,7 +570,7 @@ void HyperBinning::updateAverageBinWidth() const{
 
   _averageBinWidth = averageWidth/(double)getNumBins();
   
-  //_averageBinWidth.print();
+  _averageBinWidth.updated();
 }
 
 
@@ -655,7 +615,7 @@ void HyperBinning::updateMinMax() const{
     }    
   }
   _minmax = HyperCuboid(min, max);
-
+  _minmax.updated();
 }
 
 
