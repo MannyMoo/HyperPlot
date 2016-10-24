@@ -113,6 +113,129 @@ int HyperBinning::getBinNum(const HyperPoint& coords) const{
 }
 
 
+///get multiple bin numbers at the same time. This should speed things 
+///up drastically if the binning is disk resident, because random access
+///of a TTree is incredibly slow. 
+std::vector<int> HyperBinning::getBinNum(const HyperPointSet& coords) const{
+  
+  int nCoords = coords.size();
+  
+  INFO_LOG << "Sorting " << nCoords << " HyperPoints into bins" << std::endl;
+
+  //Each coord gets a binNumber (in binNumberSet) and linkedVols (in linkedVolsSet)
+  //  -If no bin number has been assigned the binNumber is -2
+  //  -If the coord is outside the binning range it is -1
+  //  -If a coord has been assigned a bin, the binNumber will be the binNumber
+
+  std::vector<int> binNumberSet(nCoords, -2);
+  std::vector< std::vector<int> > linkedVolsSet(nCoords, std::vector<int>() );
+  
+  //First loop over the primary volumes and see if the each coord
+  //falls into it. If it does, fill the linkedVols with that volume number.
+  //If a coord doesn't fall into any of the primary volumes, set the binNumber to -1
+
+  int nPrimVols = getNumPrimaryVolumes();
+  
+  if (nPrimVols != 0){
+
+    for (int voli = 0; voli < nPrimVols; voli++){
+
+      int volNum = getPrimaryVolumeNumber(voli);
+      HyperVolume vol = getHyperVolume(volNum);
+      
+      //See if any of the coords fall into this primary vol
+      for (int i = 0; i < nCoords; i++){
+  
+        if ( linkedVolsSet.at(i).size() != 0 ) continue;
+
+        if ( vol.inVolume( coords.at(i) ) == true ){
+          linkedVolsSet.at(i).push_back(volNum);
+        }
+  
+  
+      }    
+  
+    }
+    
+    //any points which don't have a linked bin (i.e. fall into a 
+    //primary volume, set the bin number to -1)
+    for (int i = 0; i < nCoords; i++){
+        
+      if (linkedVolsSet.at(i).size() == 0){
+        binNumberSet.at(i) = -1;
+      }
+  
+    }  
+
+  }
+
+  //Loop over every volume in the binning scheme, and see if each coord falls into it.
+  // -If a bin number has already been assigned to a coord we can skip
+  // -If there are no linked volumes we must check
+  // -If there are linked volumes, and one of the linkedvol numbers is the same
+  //  as the volume number, we must check.
+  // -See if the coord is within the volume. If it is:
+  //    -If the volume has linked volumes, copy them to the linkedVols associated to
+  //     the coordinate
+  //    -If the volume has no linked volumes, this is a bin! Set the bin number and
+  //     wipe the linked volumes associated to the coord
+
+  int nVolumes = getNumHyperVolumes();
+
+  for (int voli = 0; voli < nVolumes; voli++){
+    
+    HyperVolume vol        = getHyperVolume       (voli);
+    std::vector<int> links = getLinkedHyperVolumes(voli);
+
+    for (int i = 0; i < nCoords; i++){
+
+      int&  binNum = binNumberSet.at(i);
+      
+      //If bin number has already been assigned, continue.
+      if (binNum >= -1) continue;
+      
+      //If not, loop over
+      std::vector<int>& linkedVols = linkedVolsSet.at(i);
+      int nLinkedVols = linkedVols.size();
+      
+      bool doCheck = true;
+      
+      if (nLinkedVols != 0){
+        doCheck = false;
+        for (int j = 0; j < nLinkedVols; j++){
+          if (linkedVols.at(j) == voli) {doCheck = true; break;}
+        } 
+      }
+
+      if (doCheck == false) continue;
+
+      if ( vol.inVolume(coords.at(i)) ){
+        linkedVols = links;
+        if (linkedVols.size() == 0){
+          binNum = getBinNum(voli);
+        }
+      } 
+
+    }
+
+  }
+
+
+  //any points which don't have a linked bin (i.e. fall into a 
+  //primary volume, set the bin number to -1)
+  for (int i = 0; i < nCoords; i++){
+      
+    if (binNumberSet.at(i) == -2){
+      binNumberSet.at(i) = -1;
+    }
+  
+  }  
+
+  return binNumberSet;
+
+}
+
+
 
 bool HyperBinning::isPrimaryVolume(int volumeNumber) const{
   

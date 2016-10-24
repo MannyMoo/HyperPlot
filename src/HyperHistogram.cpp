@@ -288,6 +288,27 @@ double HyperHistogram::getVal(const HyperPoint& point) const{
 }
 
 /**
+Get the bin content for each HyperPoint in a HyperPointSet
+*/
+std::vector<double> HyperHistogram::getVal(const HyperPointSet& points) const{ 
+  
+  int nPoints = points.size();
+
+  std::vector<int> binNums  = _binning->getBinNum(points);
+
+  std::vector<double> conts(nPoints);
+  
+  for (int i = 0; i < nPoints; i++){
+    conts.at(i) = this->getBinContent( binNums.at(i) );
+  }
+
+  return conts;
+
+}
+
+
+
+/**
 Add a HyperPointSet to the HyperHistogram - if any of
 the HyperPoints are weighted, they will be used.
 */
@@ -682,10 +703,6 @@ void HyperHistogram::project(TH1D* histogram, const HyperVolume& hyperVolume, do
 */
 HyperHistogram HyperHistogram::slice(std::vector<int> sliceDims, std::vector<double> sliceVals) const{
   
-  //for (unsigned i = 0; i < sliceDims.size(); i++){
-  //  std::cout << sliceDims.at(i) << "  " << sliceVals.at(i) << std::endl;
-  //}
-
   int nStartingDims = _binning->getDimension();
   int nSliceDims    = sliceDims.size();
   int nEndDims      = nStartingDims - nSliceDims;
@@ -698,19 +715,12 @@ HyperHistogram HyperHistogram::slice(std::vector<int> sliceDims, std::vector<dou
   std::vector<double> binContents;
   std::vector<double> binErrors  ;
   
-  //std::cout << "Looping over bins" << std::endl;
-
   for (int i = 0; i < getNBins(); i++){
     
-    //std::cout << "Trying to slice bin " << i << " of " << getNBins() << std::endl;
 
     HyperVolume vol       = _binning->getBinHyperVolume(i);
-    //std::cout << "  ----- Got original HyperVolume" << std::endl;
-    //vol.print();
 
     HyperVolume slicedVol = vol.slice(point, sliceDims);
-    //std::cout << "  ----- Got sliced HyperVolume" << std::endl;
-    //slicedVol.print();
 
     if (slicedVol.size() == 0) continue;
 
@@ -764,12 +774,22 @@ HyperHistogram HyperHistogram::slice(std::vector<int> sliceDims, std::vector<dou
 */
 HyperHistogram HyperHistogram::slice(int dim, double val) const{
 
-  std::vector<int> sliceDims;
+  std::vector<int>    sliceDims;
   std::vector<double> sliceVals;
   sliceDims.push_back(dim);
   sliceVals.push_back(val);
 
   return slice(sliceDims, sliceVals);
+
+}
+
+int HyperHistogram::getDimension() const{
+
+  if (_binning == 0){
+    ERROR_LOG << "HyperHistogram::getDimension - cannot get dimension, binning not set." << std::endl;
+    return 0;
+  }
+  return _binning->getDimension();
 
 }
 
@@ -790,6 +810,27 @@ void HyperHistogram::draw2DSlice(TString path, int sliceDimX, int sliceDimY, con
 
   HyperHistogram sliceHist = slice( _sliceDims, _sliceVals );
   sliceHist.draw(path);
+
+}
+
+void HyperHistogram::drawRandom2DSlice(TString path, TRandom* random) const{
+
+  int dim = getDimension();
+
+  if (dim < 3){
+    ERROR_LOG << "Why would you take a 2D slice of something with less than 3 dim." << std::endl;
+    return;
+  }
+
+  int slicedimx = random->Integer(dim);
+  int slicedimy = random->Integer(dim);
+  while( slicedimx == slicedimy ){
+    slicedimy = random->Integer(dim);
+  }
+
+  HyperPoint slicepoint = getLimits().getRandomPoint(random);
+
+  draw2DSlice(path, slicedimx, slicedimy, slicepoint);
 
 }
 

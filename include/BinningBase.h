@@ -88,6 +88,8 @@ class BinningBase {
 
   virtual void reserveCapacity(int nElements) = 0; 
   
+  virtual std::vector<int> getBinNum(const HyperPointSet& coords) const = 0;
+
 
 };
 

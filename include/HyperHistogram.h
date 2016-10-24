@@ -40,13 +40,12 @@ Binning Algorithm Options:
 #include "BinningBase.h"
 #include "HyperBinning.h"
 #include "HyperBinningDiskRes.h"
-
 #include "HyperBinningAlgorithms.h"
 
 // Root includes
+#include "TRandom.h"
 
 // std includes
-
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -91,6 +90,7 @@ class HyperHistogram : public HistogramBase, public HyperFunction {
 
   HyperHistogram& operator=(const HyperHistogram& other);
 
+  int getDimension() const;
   
   void setNames( HyperName names );
   HyperName getNames() const;
@@ -127,6 +127,8 @@ class HyperHistogram : public HistogramBase, public HyperFunction {
   void draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int sliceSetDim, int nSlices, const HyperPoint& slicePoint) const;
   void draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint) const;
   void draw2DSliceSet(TString path, int nSlices, const HyperPoint& slicePoint) const;
+  void drawRandom2DSlice(TString path, TRandom* random = gRandom) const;
+
 
   HyperCuboid getLimits() const;
 
@@ -134,6 +136,8 @@ class HyperHistogram : public HistogramBase, public HyperFunction {
   const BinningBase& getBinning() const { return (*_binning); }  /**< get the HyperVolumeBinning */
   
   virtual double getVal(const HyperPoint& point) const;
+  std::vector<double> getVal(const HyperPointSet& points) const; 
+
 
   virtual double getBinVolume(int bin) const;
 
