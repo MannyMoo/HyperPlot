@@ -118,6 +118,8 @@ int HyperBinning::getBinNum(const HyperPoint& coords) const{
 ///of a TTree is incredibly slow. 
 std::vector<int> HyperBinning::getBinNum(const HyperPointSet& coords) const{
   
+  return getBinNumAlt(coords);
+
   bool printInfo = false;
   if (getNumHyperVolumes() > 30000 && isDiskResident() == true) {
     INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this HyperBinning::getBinNum(const HyperPointSet& coords)" << std::endl;    
@@ -264,6 +266,135 @@ std::vector<int> HyperBinning::getBinNum(const HyperPointSet& coords) const{
   return binNumberSet;
 
 }
+
+
+///get multiple bin numbers at the same time. This should speed things 
+///up drastically if the binning is disk resident, because random access
+///of a TTree is incredibly slow. 
+std::vector<int> HyperBinning::getBinNumAlt(const HyperPointSet& coords) const{
+  
+  bool printInfo = false;
+  if (getNumHyperVolumes() > 30000 && isDiskResident() == true) {
+    INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this HyperBinning::getBinNum(const HyperPointSet& coords)" << std::endl;    
+    printInfo = true;
+  }
+
+
+  int nCoords = coords.size();
+  int nVolumes = getNumHyperVolumes();
+  
+  INFO_LOG << "Sorting " << nCoords << " HyperPoints into bins" << std::endl;
+
+  //Each coord gets a binNumber (in binNumberSet) and linkedVols (in linkedVolsSet)
+  //  -If no bin number has been assigned the binNumber is -2
+  //  -If the coord is outside the binning range it is -1
+  //  -If a coord has been assigned a bin, the binNumber will be the binNumber
+
+  std::vector<int> binNumberSet(nCoords, -2);
+  std::vector< std::vector<int> > binsInVol(nVolumes, std::vector<int>() );
+  
+  //for (unsigned i = 0; i < linkedVolsSet.size(); i++){
+  //  linkedVolsSet.at(i).reserve(2);
+  //}
+
+  //First loop over the primary volumes and see if the each coord
+  //falls into it. If it does, fill the linkedVols with that volume number.
+  //If a coord doesn't fall into any of the primary volumes, set the binNumber to -1
+  
+  int nPrimVols = getNumPrimaryVolumes();
+  
+  if (nPrimVols != 0){
+
+    if (printInfo){
+      INFO_LOG << "I'm looping over all " << nPrimVols << " primary volumes, and seeing what events fall into each" << std::endl;
+    }
+
+    for (int voli = 0; voli < nPrimVols; voli++){
+
+      int volNum = getPrimaryVolumeNumber(voli);
+      HyperVolume vol = getHyperVolume(volNum);
+      
+      //See if any of the coords fall into this primary vol
+      for (int i = 0; i < nCoords; i++){
+  
+        if ( vol.inVolume( coords.at(i) ) == true ){
+          binsInVol.at(volNum).push_back(i);
+        }
+  
+  
+      }    
+  
+    }
+    
+    //any points which don't have a linked bin (i.e. fall into a 
+    //primary volume, set the bin number to -1)
+    //for (int i = 0; i < nCoords; i++){
+    //    
+    //  if (linkedVolsSet.at(i).size() == 0){
+    //    binNumberSet.at(i) = -1;
+    //  }
+    //
+    //}  
+
+  }
+
+
+  if (printInfo){
+    INFO_LOG << "I'm now looping over all " << nVolumes << " volumes, and seeing what events fall into each." << std::endl;
+    INFO_LOG << "This could take a while with " << nCoords << " so I'll give you a handy loading bar." << std::endl;
+  }
+  
+  LoadingBar loadingBar(nVolumes);
+
+  for (int voli = 0; voli < nVolumes; voli++){
+    
+    if (printInfo){
+      loadingBar.update(voli);
+    }
+
+    int nBinsInVol = binsInVol.at(voli).size();
+
+    if (nBinsInVol == 0) continue;
+    
+    HyperVolume vol        = getHyperVolume       (voli);
+    std::vector<int> links = getLinkedHyperVolumes(voli);
+    bool anyLinks          = (links.size() != 0);
+
+    for (int i = 0; i < nBinsInVol; i++){
+      
+      int coordNum = binsInVol.at(voli).at(i);
+      const HyperPoint& coord = coords.at( coordNum );
+        
+      if ( vol.inVolume(coord) ){
+        
+        if (anyLinks == false){
+          binNumberSet.at(coordNum) = getBinNum(voli);
+        }
+        else{
+          binsInVol.at(links.at(0)).push_back(coordNum);
+          binsInVol.at(links.at(1)).push_back(coordNum);
+        }
+      } 
+
+    }
+
+  }
+
+
+  //any points which don't have a linked bin (i.e. fall into a 
+  //primary volume, set the bin number to -1)
+  for (int i = 0; i < nCoords; i++){
+      
+    if (binNumberSet.at(i) == -2){
+      binNumberSet.at(i) = -1;
+    }
+  
+  }  
+
+  return binNumberSet;
+
+}
+
 
 
 

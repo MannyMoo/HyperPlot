@@ -213,6 +213,7 @@ class HyperBinning : public BinningBase {
 
   /*   */
   virtual std::vector<int> getBinNum(const HyperPointSet& coords) const;
+  std::vector<int> getBinNumAlt(const HyperPointSet& coords) const;
 
 
   virtual HyperVolume getBinHyperVolume(int binNumber) const;
