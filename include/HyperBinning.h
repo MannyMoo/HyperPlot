@@ -65,6 +65,7 @@ The
 #include "RootPlotter2D.h"
 #include "HyperName.h"
 #include "BinningBase.h"
+#include "LoadingBar.h"
 
 
 // Root includes

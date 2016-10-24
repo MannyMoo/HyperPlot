@@ -118,6 +118,13 @@ int HyperBinning::getBinNum(const HyperPoint& coords) const{
 ///of a TTree is incredibly slow. 
 std::vector<int> HyperBinning::getBinNum(const HyperPointSet& coords) const{
   
+  bool printInfo = false;
+  if (getNumHyperVolumes() > 30000 && isDiskResident() == true) {
+    INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this HyperBinning::getBinNum(const HyperPointSet& coords)" << std::endl;    
+    printInfo = true;
+  }
+
+
   int nCoords = coords.size();
   
   INFO_LOG << "Sorting " << nCoords << " HyperPoints into bins" << std::endl;
@@ -130,13 +137,21 @@ std::vector<int> HyperBinning::getBinNum(const HyperPointSet& coords) const{
   std::vector<int> binNumberSet(nCoords, -2);
   std::vector< std::vector<int> > linkedVolsSet(nCoords, std::vector<int>() );
   
+  for (unsigned i = 0; i < linkedVolsSet.size(); i++){
+    linkedVolsSet.at(i).reserve(2);
+  }
+
   //First loop over the primary volumes and see if the each coord
   //falls into it. If it does, fill the linkedVols with that volume number.
   //If a coord doesn't fall into any of the primary volumes, set the binNumber to -1
-
+  
   int nPrimVols = getNumPrimaryVolumes();
   
   if (nPrimVols != 0){
+
+    if (printInfo){
+      INFO_LOG << "I'm looping over all " << nPrimVols << " primary volumes, and seeing what events fall into each" << std::endl;
+    }
 
     for (int voli = 0; voli < nPrimVols; voli++){
 
@@ -182,14 +197,26 @@ std::vector<int> HyperBinning::getBinNum(const HyperPointSet& coords) const{
 
   int nVolumes = getNumHyperVolumes();
 
+  if (printInfo){
+    INFO_LOG << "I'm now looping over all " << nVolumes << " volumes, and seeing what events fall into each." << std::endl;
+    INFO_LOG << "This could take a while with " << nCoords << " so I'll give you a handy loading bar." << std::endl;
+  }
+  
+  LoadingBar loadingBar(nVolumes);
+
   for (int voli = 0; voli < nVolumes; voli++){
     
+    if (printInfo){
+      loadingBar.update(voli);
+    }
+
     HyperVolume vol        = getHyperVolume       (voli);
     std::vector<int> links = getLinkedHyperVolumes(voli);
+    bool anyLinks          = (links.size() != 0);
 
     for (int i = 0; i < nCoords; i++){
 
-      int&  binNum = binNumberSet.at(i);
+      int&  binNum = binNumberSet[i];
       
       //If bin number has already been assigned, continue.
       if (binNum >= -1) continue;
@@ -210,9 +237,12 @@ std::vector<int> HyperBinning::getBinNum(const HyperPointSet& coords) const{
       if (doCheck == false) continue;
 
       if ( vol.inVolume(coords.at(i)) ){
-        linkedVols = links;
-        if (linkedVols.size() == 0){
+        
+        if (anyLinks == false){
           binNum = getBinNum(voli);
+        }
+        else{
+          linkedVols = links;
         }
       } 
 
@@ -335,10 +365,34 @@ void HyperBinning::updateCash() const{
   //possilbe infinite loops
 
   _changed = false;
+  
+  bool printCacheInfo = false;
+  if (getNumPrimaryVolumes() > 2e6 && isDiskResident() == true) {
+    INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this cache update." << std::endl;    
+    printCacheInfo = true;
+  }
+
+  if (printCacheInfo) {
+    INFO_LOG << "First I'm updating the bin numbering that lets me quickly associate volumes to bins and vice versa" << std::endl;
+  }
 
   updateBinNumbering();
-  updateAverageBinWidth();
+
+  if (printCacheInfo) {
+    INFO_LOG << "Now I'm finding the limits of the binning" << std::endl;
+  }
+
   updateMinMax();
+
+  if (printCacheInfo) {
+    INFO_LOG << "Now I'm finding average bin widths" << std::endl;
+  }
+
+  updateAverageBinWidth();
+
+  if (printCacheInfo) {
+    INFO_LOG << "The cache has successfully been updated!" << std::endl;
+  }
 
 }
 
