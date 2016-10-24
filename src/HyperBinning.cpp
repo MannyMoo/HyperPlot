@@ -367,7 +367,7 @@ void HyperBinning::updateCash() const{
   _changed = false;
   
   bool printCacheInfo = false;
-  if (getNumPrimaryVolumes() > 2e6 && isDiskResident() == true) {
+  if (getNumHyperVolumes() > 2e6 && isDiskResident() == true) {
     INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this cache update." << std::endl;    
     printCacheInfo = true;
   }
