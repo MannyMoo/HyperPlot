@@ -66,6 +66,7 @@ The
 #include "HyperName.h"
 #include "BinningBase.h"
 #include "LoadingBar.h"
+#include "CachedVar.h"
 
 
 // Root includes
@@ -80,23 +81,24 @@ The
 
 class HyperBinning : public BinningBase {
 
-  protected:
+  private:
   
-  mutable bool _changed; 
+  //mutable bool _changed; 
   /**< 
     keep a record to check if the binning changes -
     if so _binNum, _hyperVolumeNumFromBinNum, _averageBinWidth,
     and _minmax need to be redetermined.
   */
 
-  mutable HyperPoint _averageBinWidth;
+  mutable CachedVar<HyperPoint> _averageBinWidth;
   /**< store the a Hyperpoint giving the average bin width in each dimension. This
   is calculated once, and reused. */
 
-  mutable HyperCuboid _minmax; /**< store the HyperCuboid that surrounds the binning. This
+  mutable CachedVar<HyperCuboid> _minmax; 
+  /**< store the HyperCuboid that surrounds the binning. This
   is calculated once, and reused. */
 
-  mutable std::vector< int >              _binNum; 
+  mutable CachedVar<std::vector< int > >              _binNum; 
   /**< 
     Every HyperVolume has a Bin Number, although these will be -1
     if it's not a true bin, and just part of the bin hierarchy.
@@ -125,7 +127,7 @@ class HyperBinning : public BinningBase {
 
   */
 
-  mutable std::vector< int >              _hyperVolumeNumFromBinNum;
+  mutable CachedVar< std::vector< int > >     _hyperVolumeNumFromBinNum;
   /**< 
     The opposite of the member _binNum. This gives the HyperVolume number
     from the Bin Number. In the below example
@@ -151,6 +153,9 @@ class HyperBinning : public BinningBase {
     
     ~~~
   */
+
+  protected:
+
 
   int followBinLinks(const HyperPoint& coords, int binNumber) const; 
 

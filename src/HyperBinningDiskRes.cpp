@@ -158,7 +158,8 @@ bool HyperBinningDiskRes::addHyperVolume(const HyperVolume& hyperVolume, std::ve
     _tree->Fill();
   }
   
-  _changed = true;
+  updateCash();
+  
   return true;
 }
 
@@ -205,7 +206,7 @@ void HyperBinningDiskRes::loadHyperBinningTree(){
   
   //_tree->SetMaxVirtualSize(1000);
   _currentEntry = -1;
-  _changed      = true;
+  updateCash();
 
 }
 
@@ -255,7 +256,7 @@ void HyperBinningDiskRes::createHyperBinningTree(){
   //_tree->SetMaxVirtualSize(1000);
 
   _currentEntry = -1;
-  _changed = true;
+  updateCash();
 
 }
 

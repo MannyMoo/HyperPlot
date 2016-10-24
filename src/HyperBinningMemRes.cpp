@@ -16,8 +16,6 @@ void HyperBinningMemRes::setDimension(int dim){
   
   if (getDimension() == 0){
     BinningBase::setDimension(dim);
-    _averageBinWidth = HyperPoint ( getDimension(), 1.0);
-    _minmax          = HyperCuboid( getDimension(), 0.0, 1.0 );
   }
 
 }
@@ -74,7 +72,7 @@ bool HyperBinningMemRes::addHyperVolume(const HyperVolume& hyperVolume, std::vec
   if (hyperVolume.getDimension() == getDimension()) {
     _hyperVolumes.push_back(hyperVolume); 
     _linkedHyperVolumes.push_back(linkedVolumes);
-    _changed = true;
+    updateCash();
     return true;
   }
 
@@ -239,8 +237,8 @@ void HyperBinningMemRes::load(TString filename, TString option){
   delete highCorner;
   delete linkedBins;
 
-  _changed = true;
-  
+  updateCash();
+
   file->Close();
 
 }

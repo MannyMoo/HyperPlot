@@ -3,16 +3,16 @@
 
 ///The only constructor
 HyperBinning::HyperBinning() :
-  _changed(true),
+//  _changed(true),
   _averageBinWidth(getDimension()),
-  _minmax( HyperPoint(getDimension()), HyperPoint(getDimension()) )
+  _minmax( HyperCuboid(HyperPoint(getDimension()), HyperPoint(getDimension())) )
 {
   setBinningType("HyperBinning");
   WELCOME_LOG << "Hello from the HyperBinning() Constructor";
 }
+ 
 
-
-
+ 
 ///Set the dimension of the HyperBinning. This can only be 
 ///called once, when it is known what dimesnion it is.
 void HyperBinning::setDimension(int dim){
@@ -23,7 +23,7 @@ void HyperBinning::setDimension(int dim){
     _minmax          = HyperCuboid( getDimension(), 0.0, 1.0 );
   }
 
-}
+} 
 
 
 /** 
@@ -60,12 +60,10 @@ void HyperBinning::setDimension(int dim){
 */
 int HyperBinning::getBinNum(const HyperPoint& coords) const{
   
-  if (_changed == true) updateCash();
-
   //First check if the HyperPoint is in the HyperCuboid _minmax that
   //surrounds all the bins.
 
-  if (_minmax.inVolume(coords) == 0) return -1;
+  if ( getLimits().inVolume(coords) == 0) return -1;
   
   int nPrimVols = getNumPrimaryVolumes();
   
@@ -86,7 +84,7 @@ int HyperBinning::getBinNum(const HyperPoint& coords) const{
   
     if ( getLinkedHyperVolumes(volumeNumber).size() > 0 ) volumeNumber = followBinLinks(coords, volumeNumber);
   
-    return _binNum.at(volumeNumber);
+    return getBinNum(volumeNumber);
   }
 
 
@@ -105,10 +103,10 @@ int HyperBinning::getBinNum(const HyperPoint& coords) const{
   }
   else{
     ERROR_LOG << "This primary volume has NO links. Not what I expect!!" << std::endl;
-    return _binNum.at(primaryVolumeNumber);
+    return getBinNum(primaryVolumeNumber);
   }
   
-  return _binNum.at(volumeNumber);
+  return getBinNum(volumeNumber);
 
 }
 
@@ -452,10 +450,11 @@ int HyperBinning::followBinLinks(const HyperPoint& coords, int motherVolumeNumbe
 ///HyperVolumes!!! - see the class description for more details)
 int HyperBinning::getNumBins() const{
   
-  //std::cout << "getNumBins" << std::endl;
-  if (_changed == true) updateCash();
+  if ( _hyperVolumeNumFromBinNum.isUpdateNeeded() == true ){
+    updateBinNumbering(); 
+  }
   
-  return _hyperVolumeNumFromBinNum.size();
+  return _hyperVolumeNumFromBinNum.get().size();
 
 }
 
@@ -464,9 +463,7 @@ int HyperBinning::getNumBins() const{
 ///from the bin number, then returns that HyperVolume.
 HyperVolume HyperBinning::getBinHyperVolume(int binNumber) const{
   
-  //std::cout << "getBinHyperVolume" << std::endl;
-  if (_changed == true) updateCash();
-  return getHyperVolume( _hyperVolumeNumFromBinNum.at(binNumber) );
+  return getHyperVolume( getHyperVolumeNumber(binNumber) );
 
 }
 
@@ -474,15 +471,19 @@ HyperVolume HyperBinning::getBinHyperVolume(int binNumber) const{
 ///If this returns -1, it means that the HyperVolume in question
 ///is not a bin, but part of the binning hierarchy.
 int HyperBinning::getBinNum(int volumeNumber) const{
-  if (_changed == true) updateCash();
-  return _binNum.at(volumeNumber);
+  if ( _binNum.isUpdateNeeded() == true ){
+    updateBinNumbering(); 
+  }  
+  return _binNum.get().at(volumeNumber);
 }
 
 /// get the HyperVolume Number from the bin number
 ///
 int HyperBinning::getHyperVolumeNumber(int binNumber) const{
-  if (_changed == true) updateCash(); 
-  return _hyperVolumeNumFromBinNum.at(binNumber);
+  if ( _hyperVolumeNumFromBinNum.isUpdateNeeded() == true ){
+    updateBinNumbering(); 
+  }
+  return _hyperVolumeNumFromBinNum.get().at(binNumber);
 }
 
 ///Update the cash which includes the  mutable member variables
@@ -494,36 +495,40 @@ void HyperBinning::updateCash() const{
 
   //note the ordering of theses is important...
   //possilbe infinite loops
-
-  _changed = false;
   
-  bool printCacheInfo = false;
-  if (getNumHyperVolumes() > 2e6 && isDiskResident() == true) {
-    INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this cache update." << std::endl;    
-    printCacheInfo = true;
-  }
-
-  if (printCacheInfo) {
-    INFO_LOG << "First I'm updating the bin numbering that lets me quickly associate volumes to bins and vice versa" << std::endl;
-  }
-
-  updateBinNumbering();
-
-  if (printCacheInfo) {
-    INFO_LOG << "Now I'm finding the limits of the binning" << std::endl;
-  }
-
-  updateMinMax();
-
-  if (printCacheInfo) {
-    INFO_LOG << "Now I'm finding average bin widths" << std::endl;
-  }
-
-  updateAverageBinWidth();
-
-  if (printCacheInfo) {
-    INFO_LOG << "The cache has successfully been updated!" << std::endl;
-  }
+  _averageBinWidth         .changed();
+  _minmax                  .changed();
+  _binNum                  .changed();
+  _hyperVolumeNumFromBinNum.changed();
+  //_changed = false;
+  
+//  bool printCacheInfo = false;
+//  if (getNumHyperVolumes() > 2e6 && isDiskResident() == true) {
+//    INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this cache update." << std::endl;    
+//    printCacheInfo = true;
+//  }
+//
+//  if (printCacheInfo) {
+//    INFO_LOG << "First I'm updating the bin numbering that lets me quickly associate volumes to bins and vice versa" << std::endl;
+//  }
+//
+//  updateBinNumbering();
+//
+//  if (printCacheInfo) {
+//    INFO_LOG << "Now I'm finding the limits of the binning" << std::endl;
+//  }
+//
+//  updateMinMax();
+//
+//  if (printCacheInfo) {
+//    INFO_LOG << "Now I'm finding average bin widths" << std::endl;
+//  }
+//
+//  updateAverageBinWidth();
+//
+//  if (printCacheInfo) {
+//    INFO_LOG << "The cache has successfully been updated!" << std::endl;
+//  }
 
 }
 
@@ -535,13 +540,20 @@ void HyperBinning::updateBinNumbering() const{
   int nVolumes = getNumHyperVolumes();
   _binNum = std::vector<int>(nVolumes, -1);
   
+  if (getNumHyperVolumes() > 2e6 && isDiskResident() == true) {
+    INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this cache update." << std::endl;    
+    INFO_LOG << "I'm updating the bin numbering that lets me quickly associate volumes to bins and vice versa" << std::endl;
+  }
+
+
+
 
   //if a HyperVolume has any linked HyperVolumes,
   //then set its bin number to count.
   int count = 0;
   for (int i = 0; i < getNumHyperVolumes(); i++){
     if ( getLinkedHyperVolumes(i).size() == 0 ) {
-      _binNum.at(i) = count;
+      _binNum.get().at(i) = count;
       count++;
     }
   }  
@@ -553,19 +565,22 @@ void HyperBinning::updateBinNumbering() const{
 
   //fill the vector
   for (int i = 0; i < getNumHyperVolumes(); i++){
-    if ( _binNum.at(i) != -1 ) {
-      _hyperVolumeNumFromBinNum.at( _binNum.at(i) ) = i;
+    if ( _binNum.get().at(i) != -1 ) {
+      _hyperVolumeNumFromBinNum.get().at( _binNum.get().at(i) ) = i;
     }
   }    
 
- 
+  _hyperVolumeNumFromBinNum.updated();
+  _binNum                  .updated();
 }
 
 ///return the limits of the binning.
 ///This value is cashed for speed - when the binning changes the cashe will
 ///automatically be updated.
 HyperCuboid HyperBinning::getLimits() const{
-  if (_changed == true) updateCash();   
+  if (_minmax.isUpdateNeeded() == true) {
+    updateMinMax();  
+  } 
   return _minmax;
 }
 
@@ -575,6 +590,12 @@ HyperCuboid HyperBinning::getLimits() const{
 ///Will usually be called from updateCash()
 void HyperBinning::updateAverageBinWidth() const{
   
+  if (getNumHyperVolumes() > 2e6 && isDiskResident() == true) {
+    INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this cache update." << std::endl;    
+    INFO_LOG << "I'm updating the average bin width" << std::endl;
+  }
+
+
   int dim = getDimension();
 
   HyperPoint averageWidth(dim);
@@ -597,7 +618,13 @@ void HyperBinning::updateAverageBinWidth() const{
 ///in the cashe. Will usually be called from updateCash().
 void HyperBinning::updateMinMax() const{
   
-  int dim = getDimension();
+  if (getNumHyperVolumes() > 2e6 && isDiskResident() == true) {
+    INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this cache update." << std::endl;    
+    INFO_LOG << "I'm the limits of this histogram" << std::endl;
+  }
+
+
+  int dim = getDimension(); 
 
   HyperPoint min(dim);
   HyperPoint max(dim);
@@ -606,15 +633,27 @@ void HyperBinning::updateMinMax() const{
     min.at(d) = getHyperVolume(0).getMin(d);
     max.at(d) = getHyperVolume(0).getMax(d);
   }
-
-  for(int i = 1; i < getNumHyperVolumes(); i++){
-    HyperVolume thisVol = getHyperVolume(i);
-    for (int d = 0; d < dim; d++){
-      if (min.at(d) > thisVol.getMin(d)) min.at(d) = thisVol.getMin(d);
-      if (max.at(d) < thisVol.getMax(d)) max.at(d) = thisVol.getMax(d);
+  
+  int nPrimVols = getNumPrimaryVolumes();
+  
+  if (nPrimVols == 0){
+    for(int i = 1; i < getNumHyperVolumes(); i++){
+      HyperVolume thisVol = getHyperVolume(i);
+      for (int d = 0; d < dim; d++){
+        if (min.at(d) > thisVol.getMin(d)) min.at(d) = thisVol.getMin(d);
+        if (max.at(d) < thisVol.getMax(d)) max.at(d) = thisVol.getMax(d);
+      }
     }
   }
-
+  else{
+    for(int i = 1; i < getNumPrimaryVolumes(); i++){
+      HyperVolume thisVol = getHyperVolume( getPrimaryVolumeNumber(i) );
+      for (int d = 0; d < dim; d++){
+        if (min.at(d) > thisVol.getMin(d)) min.at(d) = thisVol.getMin(d);
+        if (max.at(d) < thisVol.getMax(d)) max.at(d) = thisVol.getMax(d);
+      }
+    }    
+  }
   _minmax = HyperCuboid(min, max);
 
 }
@@ -624,8 +663,9 @@ void HyperBinning::updateMinMax() const{
 ///This value is cashed for speed - when the binning changes the cashe will
 ///automatically be updated.
 HyperPoint HyperBinning::getAverageBinWidth() const{
-  //std::cout << "getAverageBinWidth" << std::endl;
-  if (_changed == true) updateCash();
+  if (_averageBinWidth.isUpdateNeeded() == true) {
+    updateAverageBinWidth();  
+  } 
   return _averageBinWidth;  
 
 }
@@ -633,8 +673,8 @@ HyperPoint HyperBinning::getAverageBinWidth() const{
 
 void HyperBinning::reserveCapacity(int nElements){
 
-  _binNum                  .reserve(nElements);
-  _hyperVolumeNumFromBinNum.reserve(nElements);
+  _binNum                  .get().reserve(nElements);
+  _hyperVolumeNumFromBinNum.get().reserve(nElements);
 
 }
 
@@ -681,7 +721,7 @@ void HyperBinning::mergeBinnings( const BinningBase& other ){
     addPrimaryVolumeNumber(primaryVolumeNumber);
   }
 
-  _changed = true;
+  updateCash();
 
   //INFO_LOG << "Ending HyperBinning::mergeBinnings" << std::endl;
 
