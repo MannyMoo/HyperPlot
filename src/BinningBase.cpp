@@ -58,6 +58,21 @@ TString BinningBase::filename() const{
   return "";
 }
 
+void BinningBase::reserveCapacity(int nElements){
+  nElements++;
+}
+
+std::vector<int> BinningBase::getBinNum(const HyperPointSet& coords) const{
+  std::vector<int> binNums;
+  binNums.reserve(coords.size());
+
+  for (unsigned i = 0; i < coords.size(); i++){
+    binNums.push_back( getBinNum(coords.at(i)) );
+  }
+  return binNums;
+} 
+
+
 BinningBase::~BinningBase(){
 
 }

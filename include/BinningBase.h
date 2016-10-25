@@ -86,9 +86,9 @@ class BinningBase {
   virtual HyperPoint getAverageBinWidth() const = 0;
   virtual HyperCuboid getLimits() const = 0;
 
-  virtual void reserveCapacity(int nElements) = 0; 
+  virtual void reserveCapacity(int nElements); 
   
-  virtual std::vector<int> getBinNum(const HyperPointSet& coords) const = 0;
+  virtual std::vector<int> getBinNum(const HyperPointSet& coords) const;
 
 
 };
