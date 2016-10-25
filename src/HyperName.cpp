@@ -103,6 +103,45 @@ TString HyperName::getAxisString(int dim){
   return retVal;
 }
 
+
+int HyperName::getDimension() const{
+  return _names.size();
+}
+
+/**
+  Slice (remove) the given dimesnions, and return new HyperName
+*/
+HyperName HyperName::slice(std::vector<int> sliceDims){
+  
+  int nStartingDims = getDimension();
+  int nSliceDims    = sliceDims.size();
+
+  HyperName names( nStartingDims - nSliceDims );
+  int count = 0;
+
+  for (int i = 0; i < nStartingDims; i++){
+
+    bool doesExist = false;
+
+    for (int j = 0; j < nSliceDims; j++){
+      int dim = sliceDims.at(j);
+      if (i == dim) {
+        doesExist = true;
+        break;
+      }
+    }
+
+    if (doesExist == false) { 
+      names.at(count) = at(i); count++; 
+    }
+  }
+
+  return names;    
+
+}
+
+
+
 ///Destructor
 ///
 HyperName::~HyperName(){

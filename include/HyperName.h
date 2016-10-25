@@ -43,6 +43,10 @@ class HyperName {
 
   TString getAxisString(int dim);
   
+  int getDimension() const;
+
+  HyperName slice(std::vector<int> sliceDims);
+
   const TString& at(int dim) const{return _names.at(dim);} /**< access an element of the name vector */
   TString& at(int dim) {return _names.at(dim);}            /**< access an element of the name vector */
 
