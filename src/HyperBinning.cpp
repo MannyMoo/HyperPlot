@@ -296,7 +296,7 @@ std::vector<int> HyperBinning::getBinNumAlt(const HyperPointSet& coords) const{
   //  -If the coord is outside the binning range it is -1
   //  -If a coord has been assigned a bin, the binNumber will be the binNumber
 
-  std::vector<int> binNumberSet(nCoords, -2);
+  std::vector<int> binNumberSet(nCoords, -1);
   std::vector< std::vector<int> > binsInVol(nVolumes, std::vector<int>() );
 
   //First loop over the primary volumes and see if the each coord
@@ -304,31 +304,26 @@ std::vector<int> HyperBinning::getBinNumAlt(const HyperPointSet& coords) const{
   
   int nPrimVols = getNumPrimaryVolumes();
   
-  if (nPrimVols != 0){
 
-    if (printInfo){
-      INFO_LOG << "I'm looping over all " << nPrimVols << " primary volumes, and seeing what events fall into each" << std::endl;
-    }
-
-    for (int voli = 0; voli < nPrimVols; voli++){
-
-      int volNum = getPrimaryVolumeNumber(voli);
-      HyperVolume vol = getHyperVolume(volNum);
-      
-      //See if any of the coords fall into this primary vol
-      for (int i = 0; i < nCoords; i++){
-  
-        if ( vol.inVolume( coords.at(i) ) == true ){
-          binsInVol.at(volNum).push_back(i);
-        }
-  
-      }    
-  
-    }
-
-
+  if (printInfo){
+    INFO_LOG << "I'm looping over all " << nPrimVols << " primary volumes, and seeing what events fall into each" << std::endl;
   }
 
+  for (int voli = 0; voli < nPrimVols; voli++){
+
+    int volNum = getPrimaryVolumeNumber(voli);
+    HyperVolume vol = getHyperVolume(volNum);
+    
+    //See if any of the coords fall into this primary vol
+    for (int i = 0; i < nCoords; i++){
+  
+      if ( vol.inVolume( coords.at(i) ) == true ){
+        binsInVol.at(volNum).push_back(i);
+      }
+  
+    }    
+  
+  }
 
   if (printInfo){
     INFO_LOG << "I'm now looping over all " << nVolumes << " volumes, and seeing what events fall into each." << std::endl;
@@ -372,16 +367,6 @@ std::vector<int> HyperBinning::getBinNumAlt(const HyperPointSet& coords) const{
 
   }
 
-
-  //any points which don't have a linked bin (i.e. fall into a 
-  //primary volume, set the bin number to -1)
-  for (int i = 0; i < nCoords; i++){
-      
-    if (binNumberSet.at(i) == -2){
-      binNumberSet.at(i) = -1;
-    }
-  
-  }  
 
   return binNumberSet;
 

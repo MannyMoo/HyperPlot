@@ -121,8 +121,9 @@ class HyperHistogram : public HistogramBase, public HyperFunction {
 
   
 
-  HyperHistogram slice(std::vector<int> sliceDims, std::vector<double> sliceVals) const;
-  HyperHistogram slice(int dim, double val) const;
+  HyperHistogram slice(std::vector<int> sliceDims, const HyperPoint& slicePoint) const;
+  std::vector<HyperHistogram> slice(std::vector<int> sliceDims, const HyperPointSet& slicePoints) const;
+
   void draw2DSlice   (TString path, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint) const;
   void draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int sliceSetDim, int nSlices, const HyperPoint& slicePoint) const;
   void draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint) const;

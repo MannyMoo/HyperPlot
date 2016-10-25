@@ -698,90 +698,6 @@ void HyperHistogram::project(TH1D* histogram, const HyperVolume& hyperVolume, do
 
 }
 
-/**
- \todo remember how this works
-*/
-HyperHistogram HyperHistogram::slice(std::vector<int> sliceDims, std::vector<double> sliceVals) const{
-  
-  int nStartingDims = _binning->getDimension();
-  int nSliceDims    = sliceDims.size();
-  int nEndDims      = nStartingDims - nSliceDims;
-
-  HyperBinningMemRes temp;
-  
-  HyperPoint point(nStartingDims);
-  for (int i = 0; i < nSliceDims; i++) point.at(sliceDims.at(i)) = sliceVals.at(i);
-
-  std::vector<double> binContents;
-  std::vector<double> binErrors  ;
-  
-  for (int i = 0; i < getNBins(); i++){
-    
-
-    HyperVolume vol       = _binning->getBinHyperVolume(i);
-
-    HyperVolume slicedVol = vol.slice(point, sliceDims);
-
-    if (slicedVol.size() == 0) continue;
-
-    temp.addHyperVolume(slicedVol);
-    
-    binContents.push_back( getBinContent(i) );
-    binErrors  .push_back( getBinError  (i) );
-  }  
-  
-  //std::cout << "Now setting bin contents" << std::endl;
-
-  HyperHistogram slicedHist(temp);
-
-  for (unsigned i = 0; i < binContents.size(); i++){
-    slicedHist.setBinContent(i, binContents.at(i) );
-    slicedHist.setBinError  (i, binErrors  .at(i) );
-  }
-  
-  //std::cout << "Now dealing with the HyperNames" << std::endl;
-
-  HyperName names(nEndDims);
-  int count = 0;
-
-  for (int i = 0; i < nStartingDims; i++){
-    bool doesExist = false;
-    for (int j = 0; j < nSliceDims; j++){
-      int dim = sliceDims.at(j);
-      if (i == dim) doesExist = true;
-    }
-
-    if (doesExist == false) { 
-      //std::cout << "names.at(" << count << ") = _binning->getNames().at(" << i << ")" << std::endl;
-      names.at(count) = _binning->getNames().at(i); count++; 
-    }
-  }  
-
-  slicedHist.setNames(names);
-  
-  slicedHist.setMin( getMin() );
-  slicedHist.setMax( getMax() );
-
-  //std::cout << "Done" << std::endl;
-
-
-  return slicedHist;
-
-}
-
-/**
- \todo remember how this works
-*/
-HyperHistogram HyperHistogram::slice(int dim, double val) const{
-
-  std::vector<int>    sliceDims;
-  std::vector<double> sliceVals;
-  sliceDims.push_back(dim);
-  sliceVals.push_back(val);
-
-  return slice(sliceDims, sliceVals);
-
-}
 
 int HyperHistogram::getDimension() const{
 
@@ -794,21 +710,126 @@ int HyperHistogram::getDimension() const{
 }
 
 
+/**
+  Take a slice of the HyperHistogram and return it as HyperHistogram. The slice is taken in
+  the given slice dimesions i.e. if we had a 5D space with dims [0 1 2 3 4] we could slice 
+  through dimensions 2 3 and 4 to return a 2D histogram in 0 vs. 1. The slice in dimensions
+  2 3 and 4 is taken from the given slicePoint
+*/
+HyperHistogram HyperHistogram::slice(std::vector<int> sliceDims, const HyperPoint& slicePoint) const{
+  
+  HyperBinningMemRes temp;
+
+  std::vector<double> binContents;
+  std::vector<double> binErrors  ;
+  
+  //Loop over all the bins and slice them. If the slice doesn't 
+  //pass through the bin volume, the returned volume with have dimesnion 0.
+  //In these cases, skip the bin as it will not show up in the slice.
+
+  for (int i = 0; i < getNBins(); i++){
+    
+    HyperVolume vol       = _binning->getBinHyperVolume(i);
+
+    HyperVolume slicedVol = vol.slice(slicePoint, sliceDims);
+
+    if (slicedVol.size() == 0) continue;
+
+    temp.addHyperVolume(slicedVol);
+    
+    binContents.push_back( getBinContent(i) );
+    binErrors  .push_back( getBinError  (i) );
+  }  
+  
+  //Set the bin contents and errors
+
+  HyperHistogram slicedHist(temp);
+
+  for (unsigned i = 0; i < binContents.size(); i++){
+    slicedHist.setBinContent(i, binContents.at(i) );
+    slicedHist.setBinError  (i, binErrors  .at(i) );
+  }
+  
+  //Set the names and the min/max from this histogram
+
+  slicedHist.setNames( getNames().slice(sliceDims) );
+  
+  slicedHist.setMin( getMin() );
+  slicedHist.setMax( getMax() );
+
+  return slicedHist;
+
+}
+
+
+std::vector<HyperHistogram> HyperHistogram::slice(std::vector<int> sliceDims, const HyperPointSet& slicePoints) const{
+  
+  int nSlices = slicePoints.size();
+
+  std::vector< HyperBinningMemRes  > slicedBinnings(nSlices, HyperBinningMemRes() );
+  std::vector< std::vector<double> > binContents   (nSlices, std::vector<double>(0, 0.0) );
+  std::vector< std::vector<double> > binErrors     (nSlices, std::vector<double>(0, 0.0) );
+  
+  //Loop over all the bins and slice them. If the slice doesn't 
+  //pass through the bin volume, the returned volume with have dimesnion 0.
+  //In these cases, skip the bin as it will not show up in the slice.
+
+  for (int i = 0; i < getNBins(); i++){
+    
+    HyperVolume vol       = _binning->getBinHyperVolume(i);
+    double content     = getBinContent(i);
+    double error       = getBinContent(i);
+
+    for (int sli = 0; sli < nSlices; sli++){
+      HyperVolume slicedVol = vol.slice( slicePoints.at(sli), sliceDims);
+  
+      if (slicedVol.size() == 0) continue;
+  
+      slicedBinnings.at(sli).addHyperVolume( slicedVol  );
+      binContents   .at(sli).push_back     ( content    );
+      binErrors     .at(sli).push_back     ( error      );
+    }
+
+  }  
+  
+  //Set the bin contents and errors
+  //Set the names and the min/max from this histogram
+
+  std::vector< HyperHistogram  > slicedHist;
+  slicedHist.reserve(nSlices);
+
+  for (int sli = 0; sli < nSlices; sli++){
+    
+    slicedHist.push_back( HyperHistogram( slicedBinnings.at(sli) ) );
+
+    int nBins = binContents.at(sli).size();
+    for (int bin = 0; bin < nBins; bin++){
+      slicedHist.at(sli).setBinContent(bin, binContents.at(sli).at(bin) );
+      slicedHist.at(sli).setBinError  (bin, binErrors  .at(sli).at(bin) );
+    }
+
+    slicedHist.at(sli).setNames( getNames().slice(sliceDims) );
+    slicedHist.at(sli).setMin ( getMin() );
+    slicedHist.at(sli).setMax ( getMax() );
+  }
+  
+  return slicedHist;
+
+}
+
+
+
 void HyperHistogram::draw2DSlice(TString path, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint) const{
   
-  //std::cout << "draw2DSlice(" << path << ", " << sliceDimX << ", " << sliceDimY << ", " << slicePoint << ")" << std::endl;
-
-  std::vector<int   > _sliceDims;
-  std::vector<double> _sliceVals;
+  std::vector<int   > sliceDims;
 
   for (int i = 0; i < slicePoint.getDimension(); i++){
     if (i == sliceDimX) continue;
     if (i == sliceDimY) continue;
-    _sliceDims.push_back( i                );
-    _sliceVals.push_back( slicePoint.at(i) );
+    sliceDims.push_back( i );
   }
 
-  HyperHistogram sliceHist = slice( _sliceDims, _sliceVals );
+  HyperHistogram sliceHist = slice( sliceDims, slicePoint );
   sliceHist.draw(path);
 
 }
@@ -836,42 +857,102 @@ void HyperHistogram::drawRandom2DSlice(TString path, TRandom* random) const{
 
 void HyperHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int sliceSetDim, int nSlices, const HyperPoint& slicePoint) const{
 
+  std::vector<int   > _sliceDims;
+
+  for (int i = 0; i < slicePoint.getDimension(); i++){
+    if (i == sliceDimX) continue;
+    if (i == sliceDimY) continue;
+    _sliceDims.push_back( i );
+  }
+
+  HyperPointSet slicePoints(getDimension());
+
+
   HyperPoint slicePointCp(slicePoint);
 
   double min = _binning->getMin(sliceSetDim);
   double max = _binning->getMax(sliceSetDim);
   double width = (max - min)/double(nSlices);
   
+  std::vector<TString> paths;
+
   for (int i = 0; i < nSlices; i++){
     double val = min + width*(i + 0.5);
     slicePointCp.at(sliceSetDim) = val;
     
+    slicePoints.push_back(slicePointCp);
+
     TString uniquePath = path;
     uniquePath += "_sliceNum";
     uniquePath +=  i;
-    draw2DSlice(uniquePath, sliceDimX, sliceDimY, slicePointCp);
 
+    paths.push_back(uniquePath);
+  
   }
   
+  std::vector<HyperHistogram> hists = slice(_sliceDims, slicePoints);
+  
+  for (unsigned i = 0; i < hists.size(); i++){
+    hists.at(i).draw(paths.at(i));
+  }
 
 }
 
 void HyperHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint) const{
   
+  //Get the slice dimesnions from the given dimensions
+  std::vector<int   > sliceDims;
 
-  
   for (int i = 0; i < slicePoint.getDimension(); i++){
-
     if (i == sliceDimX) continue;
     if (i == sliceDimY) continue;
-    
-    TString thsPath = path;
-    thsPath += "_scanDim";
-    thsPath += i;
-
-    draw2DSliceSet(thsPath, sliceDimX, sliceDimY, i, nSlices, slicePoint);
-
+    sliceDims.push_back( i );
   }
+
+  //Fill a HyperPointSet with slice points, and create a name for each in paths
+  HyperPointSet slicePoints(getDimension());
+  std::vector<TString> paths;
+
+  //Loop over each slice dimesion - will take nSlices along each of these 
+  for (int j = 0; j < sliceDims.size(); j++){
+    
+    HyperPoint slicePointCp(slicePoint);
+  
+    int sliceSetDim = sliceDims.at(j);
+
+    double min = _binning->getMin(sliceSetDim);
+    double max = _binning->getMax(sliceSetDim);
+    double width = (max - min)/double(nSlices);
+    
+    TString pathj = path;
+    pathj += "_scanDim";
+    pathj += j;
+    
+    for (int i = 0; i < nSlices; i++){
+      double val = min + width*(i + 0.5);
+      slicePointCp.at(sliceSetDim) = val;
+      
+      slicePoints.push_back(slicePointCp);
+  
+      TString uniquePath = pathj;
+      uniquePath += "_sliceNum";
+      uniquePath +=  i;
+  
+      paths.push_back(uniquePath);
+    
+    }
+    
+  }
+
+
+  
+  std::vector<HyperHistogram> hists = slice(sliceDims, slicePoints);
+  
+  for (unsigned i = 0; i < hists.size(); i++){
+    hists.at(i).draw(paths.at(i));
+  }
+
+  
   
 
 }
