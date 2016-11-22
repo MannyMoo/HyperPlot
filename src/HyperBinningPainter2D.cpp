@@ -93,6 +93,8 @@ int HyperBinningPainter2D::getFillColour(double binContents){
     min = _histogram->getMinDensity();
     max = _histogram->getMaxDensity();
   }
+  
+  if (binContents < min || binContents > max) return kWhite;
 
   int ndivz = gStyle->GetNumberContours();
   double dz = max - min;

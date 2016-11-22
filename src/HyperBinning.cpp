@@ -485,12 +485,11 @@ void HyperBinning::updateBinNumbering() const{
   int nVolumes = getNumHyperVolumes();
   _binNum = std::vector<int>(nVolumes, -1);
   
-  if (getNumHyperVolumes() > 2e6 && isDiskResident() == true) {
+  bool printout = getNumHyperVolumes() > 2e6 && isDiskResident() == true;
+  if (printout) {
     INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this cache update." << std::endl;    
-    INFO_LOG << "I'm updating the bin numbering that lets me quickly associate volumes to bins and vice versa" << std::endl;
+    INFO_LOG << "I'm currently updating the bin numbering that lets me quickly associate volumes to bins and vice versa..." << std::endl;
   }
-
-
 
 
   //if a HyperVolume has any linked HyperVolumes,
@@ -517,6 +516,12 @@ void HyperBinning::updateBinNumbering() const{
 
   _hyperVolumeNumFromBinNum.updated();
   _binNum                  .updated();
+
+  if (printout) {
+    INFO_LOG << "Finished!" << std::endl;    
+  }
+
+
 }
 
 ///return the limits of the binning.
@@ -537,9 +542,8 @@ void HyperBinning::updateAverageBinWidth() const{
   
   if (getNumHyperVolumes() > 2e6 && isDiskResident() == true) {
     INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this cache update." << std::endl;    
-    INFO_LOG << "I'm updating the average bin width" << std::endl;
+    INFO_LOG << "I'm currently updating the average bin width by looping over all bin volumes" << std::endl;
   }
-
 
   int dim = getDimension();
 
@@ -554,8 +558,8 @@ void HyperBinning::updateAverageBinWidth() const{
   }    
 
   _averageBinWidth = averageWidth/(double)getNumBins();
-  
   _averageBinWidth.updated();
+
 }
 
 
@@ -563,12 +567,6 @@ void HyperBinning::updateAverageBinWidth() const{
 ///in the cashe. Will usually be called from updateCash().
 void HyperBinning::updateMinMax() const{
   
-  if (getNumHyperVolumes() > 2e6 && isDiskResident() == true) {
-    INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this cache update." << std::endl;    
-    INFO_LOG << "I'm the limits of this histogram" << std::endl;
-  }
-
-
   int dim = getDimension(); 
 
   HyperPoint min(dim);
@@ -582,6 +580,12 @@ void HyperBinning::updateMinMax() const{
   int nPrimVols = getNumPrimaryVolumes();
   
   if (nPrimVols == 0){
+
+    if (getNumHyperVolumes() > 2e6 && isDiskResident() == true) {
+      INFO_LOG << "Since this is a large (>2x10^6) disk resident HyperBinning, I'm going to give you information on this cache update." << std::endl;    
+      INFO_LOG << "I'm currently determining the limits of this histogram by looping over all bin volumes" << std::endl;
+    }
+
     for(int i = 1; i < getNumHyperVolumes(); i++){
       HyperVolume thisVol = getHyperVolume(i);
       for (int d = 0; d < dim; d++){
@@ -589,8 +593,11 @@ void HyperBinning::updateMinMax() const{
         if (max.at(d) < thisVol.getMax(d)) max.at(d) = thisVol.getMax(d);
       }
     }
+
   }
+
   else{
+
     for(int i = 1; i < getNumPrimaryVolumes(); i++){
       HyperVolume thisVol = getHyperVolume( getPrimaryVolumeNumber(i) );
       for (int d = 0; d < dim; d++){
@@ -598,7 +605,9 @@ void HyperBinning::updateMinMax() const{
         if (max.at(d) < thisVol.getMax(d)) max.at(d) = thisVol.getMax(d);
       }
     }    
+
   }
+
   _minmax = HyperCuboid(min, max);
   _minmax.updated();
 }

@@ -926,7 +926,7 @@ void HyperHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, 
     
     TString pathj = path;
     pathj += "_scanDim";
-    pathj += j;
+    pathj += sliceSetDim;
     
     for (int i = 0; i < nSlices; i++){
       double val = min + width*(i + 0.5);
