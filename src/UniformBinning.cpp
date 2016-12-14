@@ -124,7 +124,10 @@ HyperPoint UniformBinning::getHighCorner(int globalBinNum) const{
 }
 
 void UniformBinning::load(TString filename, TString option){
-
+  //not implemented this yet so added these lines to stop
+  //compiler warnings
+  filename = filename;
+  option = option;
 }
 
 BinningBase* UniformBinning::clone() const{
@@ -132,7 +135,9 @@ BinningBase* UniformBinning::clone() const{
 }
 
 void UniformBinning::save(TString filename) const{
-
+  //not implemented this yet so added these lines to stop
+  //compiler warnings
+  filename = filename;
 }
 
 void UniformBinning::save() const{
@@ -140,7 +145,9 @@ void UniformBinning::save() const{
 }
 
 void UniformBinning::mergeBinnings( const BinningBase& other ){
-
+  //not implemented this yet so added these lines to stop
+  //compiler warnings
+  other.getDimension();
 }
 
 int UniformBinning::getLocalBinNumber(int dim, double val) const{

@@ -914,7 +914,7 @@ void HyperHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, 
   std::vector<TString> paths;
 
   //Loop over each slice dimesion - will take nSlices along each of these 
-  for (int j = 0; j < sliceDims.size(); j++){
+  for (unsigned j = 0; j < sliceDims.size(); j++){
     
     HyperPoint slicePointCp(slicePoint);
   
