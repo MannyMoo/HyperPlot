@@ -1,6 +1,6 @@
 {
   "name": "Hyperplot",
   "tagline": "Binning and visualising multi-dimensional data",
-  "body": "![hmmm](KSPiPiAlg.pdf)\r\n\r\n### Doxygen documentation\r\n\r\n[Documentation](http://samharnew.github.io/HyperPlot/html/index.html)\r\n",
+  "body": "![hmmm](http://samharnew.github.io/HyperPlot/KSPiPiAlg.pdf)\r\n\r\n### Doxygen documentation\r\n\r\n[Documentation](http://samharnew.github.io/HyperPlot/html/index.html)\r\n\r\n\r\n",
   "note": "Don't delete this file! It's used internally to help with page regeneration."
 }
