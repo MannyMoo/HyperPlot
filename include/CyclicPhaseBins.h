@@ -55,6 +55,9 @@ class CyclicPhaseBins{
   /**< Get the high bin edge for given phase. This appropriately maps the numbers stored in _binEdges
   so that the bin edge is below the phase given, but within 2pi */
 
+  int getNumBins() const;
+  /**< Get number of bins */
+
   ~CyclicPhaseBins();
   /**< desctructor */
   

@@ -118,6 +118,13 @@ double CyclicPhaseBins::getHighBinBoundary(double phase) const{
   return highEdge;
 }
 
+int CyclicPhaseBins::getNumBins() const{
+
+  return (int)_binEdges.size();
+
+}
+
+
 CyclicPhaseBins::~CyclicPhaseBins(){
 
 }
