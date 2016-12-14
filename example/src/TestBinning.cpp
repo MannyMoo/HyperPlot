@@ -1,6 +1,10 @@
 #include "LHCbStyle.h"
 
 #include "HyperHistogram.h"
+#include "UniformBinning.h"
+#include "CyclicPhaseBins.h"
+#include "HyperCuboidSet.h"
+
 #include "LHCbStyle.h"
 
 #include <iostream>
@@ -14,16 +18,17 @@ class PhaseMotion : public HyperFunction{
   bool _returnBinNum;
   int _opt;  
   int _dim;
-  int _nbins;
+  CyclicPhaseBins _phaseBinning;
 
   public:
   
   PhaseMotion(int dim = 2, int opt = 0, int nbins = 3) :
     _returnBinNum(false), 
     _opt(opt),
-    _dim(dim),
-    _nbins(nbins)
-  {
+    _dim(dim) 
+    {
+    
+    _phaseBinning.setUniformCiSiBins(nbins);
 
     if (_opt == 0){
       INFO_LOG << "You have chosen to use phase motion number 0. This " << std::endl;
@@ -47,6 +52,9 @@ class PhaseMotion : public HyperFunction{
   void returnBinNumber(){_returnBinNum = true; }
   void returnPhase    (){_returnBinNum = false;}
 
+  void setBinEdges(std::vector<double> edges){
+    _phaseBinning.setBinEdges(edges);
+  }
 
   virtual double getVal(const HyperPoint& point) const{
     
@@ -74,20 +82,9 @@ class PhaseMotion : public HyperFunction{
     if (_returnBinNum == false){
       return phase;
     }
+    
+    return (double)_phaseBinning.getBinNumber(phase);
 
-    int pm = 1;
-    if (phase < 0){
-      pm = -1;
-      phase *= -1;
-    }
-    
-    phase /= TMath::Pi();
-    phase *= double(_nbins);
-    phase += 1.0;
-  
-    int bin = floor(phase);
-    return bin*pm;
-    
   } 
 
 
@@ -132,7 +129,7 @@ TString GetDataBinningDir(int dim ){
 void DrawHistogramSlices(TString filename, TString outdir, int nSlicesPerSet = 50){
   
   //Load histogram from file
-  HyperHistogram hist(filename);
+  HyperHistogram hist(filename, "DISK");
   
   //take the slice point to be the center of the limits
   HyperPoint slicePoint = hist.getLimits().getCenter();
@@ -278,7 +275,6 @@ void DataBinningExample(int dim){
   hist1.draw(outputdir + "pullHist");
 }
 
-
 void FunctionBinningExample(int dim, int functionNum, int nbinpairs){
   
   //Get an ouput directory based on the input variables
@@ -296,48 +292,99 @@ void FunctionBinningExample(int dim, int functionNum, int nbinpairs){
   //Can select three different functions using functionNum
   PhaseMotion phaseMotion(dim, functionNum, nbinpairs);
 
+  //bin boundaries for the phase binning (cyclic - in radians)
+  std::vector<double> phaseBinEdges;
+  for (int i = 0; i < nbinpairs*2; i++){
+    phaseBinEdges.push_back( -TMath::Pi() + TMath::Pi()*(i/double(nbinpairs)) );   
+  }
+  phaseMotion.setBinEdges(phaseBinEdges);
+
   //We want to return the phase rather than the bin number (based on the phase)
   phaseMotion.returnPhase();
   
+  //First split the histogram into 2^nDim bits. We will run the algorithm seperately
+  //on each piece, then merge the binnings at the end. For this simple example it's
+  //pointless, but this is very useful when you have huge numbers of bins. Firstly, 
+  //you can parellise, and secondly, the memory consumed by each job is much smaller.
+  //When later merged this is done as disk resident rather than memory resident, so
+  //memory is no longer an issue.
 
-  //Create a histogram with the FUNC_PHASE algorithm, based on the HyperFunction phaseMotion.
+  HyperCuboidSet set( limits );
+  for (int i = 0; i < dim; i++){
+    set = set.splitAll(i, 0.5);
+  } 
+  set.print();
+  
+  //keep a vector containing the filenames of each binning before merge
+  std::vector<TString> filenames;
+  
+  for (int i = 0; i < set.size(); i++){
 
-  HyperHistogram hist(limits, points, HyperBinningAlgorithms::FUNC_PHASE,
+    phaseMotion.returnPhase();
 
-    /***  The minimum number of events allowed in each bin */
-    /***  from the HyperPointSet provided (points)         */   
-    AlgOption::MinBinContent      (0.0 ), 
-
-    /*** This minimum bin width allowed. Can also pass a   */
-    /*** HyperPoint if you would like different min bin    */
-    /*** widths for each dimension                         */
-    AlgOption::MinBinWidth        (0.02),
-
-    /*** The hyper function that is used for this algorithm */
-    AlgOption::UseFunction        (&phaseMotion),
-
-    /*** Force all bin edges to lie along a grid */
-    AlgOption::SnapToGrid         (true),
-
-    /*** The grid (from SnapToGrid) has a granularity of the */
-    /*** min bin width multiplied by the grid multiplier */    
-    AlgOption::GridMultiplier     (2),
+    //Create a histogram with the FUNC_PHASE algorithm, based on the HyperFunction phaseMotion.
+    HyperHistogram hist(set.at(i), points, HyperBinningAlgorithms::FUNC_PHASE,
+  
+      /***  The minimum number of events allowed in each bin */
+      /***  from the HyperPointSet provided (points)         */   
+      AlgOption::MinBinContent      (0.0 ), 
+  
+      /*** This minimum bin width allowed. Can also pass a   */
+      /*** HyperPoint if you would like different min bin    */
+      /*** widths for each dimension                         */
+      AlgOption::MinBinWidth        (0.02),
+  
+      /*** The hyper function that is used for this algorithm */
+      AlgOption::UseFunction        (&phaseMotion),
+  
+      /*** Force all bin edges to lie along a grid */
+      AlgOption::SnapToGrid         (true),
+  
+      /*** The grid (from SnapToGrid) has a granularity of the */
+      /*** min bin width multiplied by the grid multiplier */    
+      AlgOption::GridMultiplier     (2),
+      
+      /*** Where do you want to define the bin edges of the phase binning */
+      AlgOption::PhaseBinEdges      (phaseBinEdges)
+      
+    );
     
-    /*** How many bin apirs do you want to split that phase into */
-    AlgOption::NumPhaseBinPairs   (nbinpairs)
-
-  );
+    //make phaseMotion reutrn bin number instead of phase, and set the 
+    //contents of the bins using this
   
-  //make phaseMotion reutrn bin number instead of phase, and set the 
-  //contents of the bins using this
+    phaseMotion.returnBinNumber();
+    hist.setContentsFromFunc(phaseMotion);
+    hist.mergeBinsWithSameContent();
+    
+    TString filename = outputdir + "PhaseBinning";
+    filename += i;
+    filename += ".root";
 
-  phaseMotion.returnBinNumber();
-  hist.setContentsFromFunc(phaseMotion);
-  
-  //save the histogram to a root file
+    hist.save(filename);
 
-  hist.save(outputdir + "PhaseBinning.root");
+    filenames.push_back(filename);
+    //hist.saveToTxtFile(filename.ReplaceAll(".root", ".txt")); //not really developed this yet.
+
+  }
+
+  { 
+    //this takes the vector of histogram filenames and merges them into a new file.
+    //this histogram is DISK resident.
+    HyperHistogram hist( outputdir + "PhaseBinning.root", filenames);
+    //hist.saveToTxtFile(outputdir + "PhaseBinning.txt"); //not really developed this yet.
+  }
   
+  INFO_LOG << "Finished merging everything" << std::endl;
+  
+  //Load the merged histogram as disk resident
+  HyperHistogram hist( outputdir + "PhaseBinning.root", "DISK");
+  
+  //Can plot some uniform bins if you like...
+  //UniformBinning binning(limits, 100);
+  //HyperHistogram hist2( binning );
+  //hist2.setContentsFromFunc(phaseMotion);
+  //hist2.draw2DSliceSet(outputdir + "slices/Uniform", 100, limits.getCenter());
+
   INFO_LOG << "This histogram has " << hist.getNBins() << " bins." << std::endl;
   
   //if the histo is 2 or less dimesnions, draw it. If it's more, draw slices instead
@@ -346,7 +393,7 @@ void FunctionBinningExample(int dim, int functionNum, int nbinpairs){
     hist.draw(outputdir + "PhaseBinning");
   }
   else{
-    TString slicedir = outputdir + "slices/";
+    TString slicedir = outputdir + "slices/HyperBinning";
     gSystem->Exec("mkdir " + slicedir);    
     DrawHistogramSlices(outputdir + "PhaseBinning.root", slicedir);
   }
