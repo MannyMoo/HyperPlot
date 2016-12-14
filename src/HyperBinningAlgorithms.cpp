@@ -163,6 +163,12 @@ AlgOption AlgOption::NumPhaseBinPairs   (int val){
   return algOption;      
 }
 
+AlgOption AlgOption::PhaseBinEdges   (std::vector<double> val){
+  AlgOption algOption;
+  algOption._optionName = PHASE_BIN_EDGES;
+  algOption._doublevector = val;
+  return algOption;      
+}
 
 
 ///Get the AlgOption::OptionName 
@@ -297,6 +303,8 @@ HyperBinningMaker* HyperBinningAlgorithms::getHyperBinningMaker(HyperCuboid binn
   if (optExist(AlgOption::NUM_BIN_PAIRS    )) 
     numPhaseBinPairs = getOpt(AlgOption::NUM_BIN_PAIRS  ).getIntOpt();
 
+
+
   //Chose the binning algorithm
 
   if (_alg == SMART ) {
@@ -326,6 +334,10 @@ HyperBinningMaker* HyperBinningAlgorithms::getHyperBinningMaker(HyperCuboid binn
   if (_alg == FUNC_PHASE) {
     HyperBinningMakerPhaseBinning* phaseBinningMaker = new HyperBinningMakerPhaseBinning(binningRange, 0);
     phaseBinningMaker->setNumBinPairs(numPhaseBinPairs);
+
+    if (optExist(AlgOption::PHASE_BIN_EDGES    )) 
+      phaseBinningMaker->setBinEdges( getOpt(AlgOption::PHASE_BIN_EDGES  ).getDoubleVectorOpt() );
+
     binnningMaker = dynamic_cast<HyperBinningMaker*>(phaseBinningMaker);
   }
   //Now set the options

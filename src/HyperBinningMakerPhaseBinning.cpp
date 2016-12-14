@@ -2,15 +2,20 @@
 
 
 
+
+
+
+
 HyperBinningMakerPhaseBinning::HyperBinningMakerPhaseBinning(const HyperCuboid& binningRange, HyperFunction* func) :
   HyperBinningMaker(binningRange, HyperPointSet( binningRange.getDimension() )),
-  _numBinPairs     (3),
+  _numBinPairs     (0),
   _maximumRandWalks(30),
   _numWalkers      (5),
   _walkSizeFrac  (0.12),
   _numberOfSystematicSplits(0),
   _numberOfGradientSplits  (0)
 {
+  setNumBinPairs(3);
   setHyperFunction(func);
   WELCOME_LOG << "Good day from the HyperBinningMakerPhaseBinning() Constructor"<<std::endl; 
 }
@@ -137,54 +142,48 @@ int HyperBinningMakerPhaseBinning::splitByCoord(int volumeNumber, int dimension,
 
 }
 
+
+void HyperBinningMakerPhaseBinning::setNumBinPairs(int binpairs){
+  _numBinPairs = binpairs;
+  std::vector<double> binEdges;
+
+  for (int i = 0; i < 2*_numBinPairs; i++){
+    binEdges.push_back( - TMath::Pi() + (TMath::Pi()/double(_numBinPairs))*i );
+  }
+
+  _binEdges = CyclicPhaseBins(binEdges);
+} 
+  
+void HyperBinningMakerPhaseBinning::setBinEdges(std::vector<double> binEdges){ 
+  _binEdges    = CyclicPhaseBins(binEdges); 
+  _numBinPairs = binEdges.size(); 
+} 
+
+
 int HyperBinningMakerPhaseBinning::getBinNumFromFuncVal(double phase){
 
-  if (phase < -10.0) return 0;
-
-  int pm = 1;
-  if (phase < 0){
-    pm = -1;
-    phase *= -1;
-  }
+  if (phase < -10.0) return -1;
   
-  phase /= TMath::Pi();
-  phase *= double(_numBinPairs);
-  phase += 1.0;
-
-  int bin = floor(phase);
-  return bin*pm;
+  return _binEdges.getBinNumber(phase);
 
 }
 
-double HyperBinningMakerPhaseBinning::getLowBinBoundary(int bin){
+double HyperBinningMakerPhaseBinning::getLowBinBoundary(double phase){
   
-  double binWidth =  TMath::Pi()/double(_numBinPairs);
-
-  if (bin > 0){
-    return (bin-1.0)*binWidth;
-  }
-
-  return (bin)*binWidth; 
+  return _binEdges.getLowBinBoundary(phase);
 
 }
 
-double HyperBinningMakerPhaseBinning::getHighBinBoundary(int bin){
+double HyperBinningMakerPhaseBinning::getHighBinBoundary(double phase){
   
-  double binWidth =  TMath::Pi()/double(_numBinPairs);
-
-  if (bin > 0){
-    return (bin)*binWidth;
-  }
-
-  return (bin + 1.0)*binWidth; 
+  return _binEdges.getHighBinBoundary(phase);
 
 }
 
 double HyperBinningMakerPhaseBinning::closestBinBoundary(double val){
 
-  int bin = getBinNumFromFuncVal(val);
-  double low  = getLowBinBoundary (bin);
-  double high = getHighBinBoundary(bin);
+  double low  = getLowBinBoundary (val);
+  double high = getHighBinBoundary(val);
 
   double distLow  = fabs(val - low );
   double distHigh = fabs(val - high);
@@ -538,8 +537,8 @@ HyperPoint HyperBinningMakerPhaseBinning::orderAndTestSplitPoints(HyperPointSet&
   std::vector<double> functionEstimate;
   std::vector<int>    index;
   
-  double lowBoundary  = getLowBinBoundary (bin);
-  double highBoundary = getHighBinBoundary(bin);
+  double lowBoundary  = getLowBinBoundary (valAtPoint);
+  double highBoundary = getHighBinBoundary(valAtPoint);
   
   VERBOSE_LOG << "Sorting points to speed my life up" << std::endl;
 
@@ -635,7 +634,7 @@ int HyperBinningMakerPhaseBinning::systematicSplit(int volumeNumber, int dimensi
   
   _numberOfSystematicSplits++;
   
-  int binNumAtCenter = getBinNumFromFuncVal(valAtCenter);
+  //int binNumAtCenter = getBinNumFromFuncVal(valAtCenter);
 
   HyperCuboid&   chosenHyperCuboid = _hyperCuboids.at(volumeNumber);
   HyperPoint centerPoint    = chosenHyperCuboid.getCenter();
@@ -674,10 +673,10 @@ int HyperBinningMakerPhaseBinning::systematicSplit(int volumeNumber, int dimensi
       
   double binEdge = 0.0;
   if (dy > 0.0){
-    binEdge = getLowBinBoundary(binNumAtCenter);
+    binEdge = getLowBinBoundary(valAtCenter);
   }
   else{
-    binEdge = getHighBinBoundary(binNumAtCenter);
+    binEdge = getHighBinBoundary(valAtCenter);
   }
 
   double scale = fabs( (binEdge - valAtCenter)/dy );

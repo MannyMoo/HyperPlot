@@ -5,12 +5,16 @@
 #include "MessageService.h"
 #include "HyperBinningMaker.h"
 #include "LoadingBar.h"
+#include "CyclicPhaseBins.h"
 
 // Root includes
 #include "TMath.h"
 
 // std includes
 #include <complex>
+
+
+
 
 /**
  * <B>HyperPlot</B>,
@@ -36,6 +40,7 @@ class HyperBinningMakerPhaseBinning : public HyperBinningMaker{
   private:
   
   int   _numBinPairs;
+  CyclicPhaseBins _binEdges;
 
   int    _maximumRandWalks;
   int    _numWalkers;
@@ -57,9 +62,9 @@ class HyperBinningMakerPhaseBinning : public HyperBinningMaker{
   /**< For a given HyperPoint, get the bin number */    
   int getBinNumFromFuncVal(double phase);
   /**< For a given phase, get the bin number */    
-  double getLowBinBoundary(int bin);
+  double getLowBinBoundary(double phase);
   /**< For a given bin, get the lower phase boundary */  
-  double getHighBinBoundary(int bin);
+  double getHighBinBoundary(double phase);
   /**< For a given bin, get the upper phase boundary */
   double closestBinBoundary(double val);
   /**< For a given phase, determine the closest bin boundary (as a phase)*/
@@ -127,9 +132,12 @@ class HyperBinningMakerPhaseBinning : public HyperBinningMaker{
   virtual void makeBinning();
   /**< run the algorithm  */  
 
-  void setNumBinPairs(int binpairs){_numBinPairs = binpairs;} 
+  void setNumBinPairs(int binpairs); 
   /**< set the number of bin pairs (see class description of details) */  
   
+  void setBinEdges(std::vector<double> binEdges);
+  /**< set the bin edges - the highest bin edge is the lowest + pi, so only nBinPair edges need to be passed */  
+
   virtual int gradientSplitAll();
 
 
