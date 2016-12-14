@@ -32,11 +32,11 @@ int CyclicPhaseBins::getBinNumber(double phase) const{
 
   while (tooSmall || tooBig){
     if (tooSmall) {
-      phase    = phase += 2.0*TMath::Pi();
+      phase += 2.0*TMath::Pi();
       tooSmall = (phase - min) < 0.0;
     }
     if (tooBig  ) {
-      phase  = phase -= 2.0*TMath::Pi();
+      phase -= 2.0*TMath::Pi();
       tooBig = (phase - min) > TMath::Pi()*2.0;
     }
   }
