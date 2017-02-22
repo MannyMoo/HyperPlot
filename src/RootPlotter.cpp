@@ -30,7 +30,7 @@ TString& RootPlotter::objDrawOptions(int i){
 }
 
 /** Add a text string at a point (x,y) on the histogram */
-void RootPlotter::addText(TString text, double x, double y, int alignh, int alignv, double size, int ndc){
+void RootPlotter::addText(TString text, double x, double y, int alignh, int alignv, double size, int ndc, int color){
   
   //1left 2center 3right
   
@@ -39,7 +39,8 @@ void RootPlotter::addText(TString text, double x, double y, int alignh, int alig
   if (ndc == true) textL->SetNDC();
   textL->SetTextAlign(alignh*10 + alignv);
   textL->SetTextSize(size);
-
+  textL->SetTextColor(color);
+  
   this->addObject(textL);
 
 }

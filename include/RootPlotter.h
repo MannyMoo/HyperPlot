@@ -54,7 +54,7 @@ class RootPlotter : public Plotter{
   void plotSame   (TPad* pad, TString plotOptions, double scaleFactor = 1.0);
   virtual void plot(TString plotDirectory, TString plotOptions = "", TPad* pad = 0, double scaleFactor = 1.0);
   
-  void addText(TString text, double x, double y, int alignh = 1, int alignv = 2, double size = 0.06, int ndc = true);
+  void addText(TString text, double x, double y, int alignh = 1, int alignv = 2, double size = 0.06, int ndc = true, int color = kBlack);
   
   void drawLegend();
 
