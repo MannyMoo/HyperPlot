@@ -133,13 +133,13 @@ void HyperBinningMaker::addShadowHyperPointSet(const HyperPointSet& data){
 ///i.e. splitPoint = 0.5 would split the bin into two equal pieces.
 ///
 ///This fuction returns the HyperCuboid above the split point 
-HyperCuboid HyperBinningMaker::splitAbovePoint(int dim, double splitPoint, const HyperCuboid& original) const{
+HyperCuboid HyperBinningMaker::splitAbovePoint(int dim, double splitPoint, const HyperCuboid& original, bool noSnapToGrid) const{
 
   HyperPoint lowCorner   ( original.getLowCorner () );
   HyperPoint highCorner  ( original.getHighCorner() );
 
   double splitCoord = lowCorner.at(dim) + (highCorner.at(dim) - lowCorner.at(dim))*splitPoint;
-  if ( _snapToGrid == true ) {
+  if ( _snapToGrid == true && noSnapToGrid == false ) {
     if ( snapToGrid(original, dim, splitCoord) == false ){
       return HyperCuboid(0);
     }  
@@ -160,13 +160,13 @@ HyperCuboid HyperBinningMaker::splitAbovePoint(int dim, double splitPoint, const
 ///i.e. splitPoint = 0.5 would split the bin into two equal pieces.
 ///
 ///This fuction returns the HyperCuboid below the split point 
-HyperCuboid HyperBinningMaker::splitBelowPoint(int dim, double splitPoint, const HyperCuboid& original) const{
+HyperCuboid HyperBinningMaker::splitBelowPoint(int dim, double splitPoint, const HyperCuboid& original, bool noSnapToGrid) const{
 
   HyperPoint lowCorner   ( original.getLowCorner () );
   HyperPoint highCorner  ( original.getHighCorner() );
 
   double splitCoord = lowCorner.at(dim) + (highCorner.at(dim) - lowCorner.at(dim))*splitPoint;
-  if ( _snapToGrid == true ) {
+  if ( _snapToGrid == true && noSnapToGrid == false ) {
     if ( snapToGrid(original, dim, splitCoord) == false ){
       return HyperCuboid(0);
     }
@@ -818,9 +818,11 @@ int HyperBinningMaker::smartLikelihoodSplitAll(){
 ///x_dim = lowEdge_dim + (highEdge_dim - lowEdge_dim)*splitPoint
 ///
 double HyperBinningMaker::countEventsBelowSplitPoint(int binNumber, int dimension, double splitPoint ) const{
+  
+  bool forceNoSnapToGrid = true;
 
   const HyperCuboid& cuboid = _hyperCuboids.at(binNumber);
-  HyperCuboid newCuboid = splitBelowPoint(dimension, splitPoint, cuboid);
+  HyperCuboid newCuboid = splitBelowPoint(dimension, splitPoint, cuboid, forceNoSnapToGrid);
   
   const HyperPointSet& chosenHyperPointSet = _hyperPointSets.at(binNumber);
 
@@ -836,8 +838,10 @@ double HyperBinningMaker::countEventsBelowSplitPoint(int binNumber, int dimensio
 ///
 double HyperBinningMaker::countShadowEventsBelowSplitPoint(int binNumber, int dimension, double splitPoint) const{
 
+  bool forceNoSnapToGrid = true;
+
   const HyperCuboid& cuboid = _hyperCuboids.at(binNumber);
-  HyperCuboid newCuboid = splitBelowPoint(dimension, splitPoint, cuboid);
+  HyperCuboid newCuboid = splitBelowPoint(dimension, splitPoint, cuboid, forceNoSnapToGrid);
   
   const HyperPointSet& chosenHyperPointSet = _shadowHyperPointSets.at(binNumber);
 

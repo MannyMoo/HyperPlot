@@ -203,8 +203,8 @@ class HyperBinningMaker {
 
   int  split(int volumeNumber, int dimension, double splitPoint);
 
-  HyperCuboid splitBelowPoint(int dim, double splitPoint, const HyperCuboid& original) const;
-  HyperCuboid splitAbovePoint(int dim, double splitPoint, const HyperCuboid& original) const;
+  HyperCuboid splitBelowPoint(int dim, double splitPoint, const HyperCuboid& original, bool noSnapToGrid = false) const;
+  HyperCuboid splitAbovePoint(int dim, double splitPoint, const HyperCuboid& original, bool noSnapToGrid = false) const;
 
   double getSumOfWeights(const HyperPointSet& hyperPointSet) const;
   double getWeight(const HyperPoint& hyperPoint) const;              //Will return 1 if _useEventWeights is false. If not, get event weight 0.
