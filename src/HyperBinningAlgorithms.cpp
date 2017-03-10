@@ -170,6 +170,14 @@ AlgOption AlgOption::PhaseBinEdges   (std::vector<double> val){
   return algOption;      
 }
 
+AlgOption AlgOption::StartBinning       (const HyperBinning& val){
+  AlgOption algOption;
+  algOption._optionName = START_BINNING;
+  algOption._hyperBinning = &val;
+  return algOption;      
+}
+
+
 
 ///Get the AlgOption::OptionName 
 ///
@@ -240,6 +248,13 @@ HyperFunction*       AlgOption::getFuncOpt         (){
 HyperName           AlgOption::getHyperNameOpt   (){
   return _hyperName;
 }
+
+///Get the HyperBinning member
+///
+const HyperBinning*  AlgOption::getHyperBinningOpt (){
+  return _hyperBinning; 
+}
+
 
 ///Check if the OptionName is EMTPY
 /// 
@@ -394,6 +409,10 @@ HyperBinningMaker* HyperBinningAlgorithms::getHyperBinningMaker(HyperCuboid binn
     else{
       binnningMaker->setGridMultiplier(valB);
     }
+  }
+
+  if (optExist(AlgOption::START_BINNING) ){
+    binnningMaker->updateFromExistingHyperBinning( *getOpt(AlgOption::START_BINNING).getHyperBinningOpt() );
   }
   
   return binnningMaker;

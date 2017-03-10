@@ -45,6 +45,76 @@ HyperBinningMaker::HyperBinningMaker(const HyperCuboid& binningRange, const Hype
 
 }
  
+
+///Takes an existing HyperBinning and updates the current state of the HyperBinningMaker
+///
+void HyperBinningMaker::updateFromExistingHyperBinning( const HyperBinning& binning ){
+  
+  if (_hyperPointSets.size() != 1) {
+    ERROR_LOG << "You can only call the updateFromExistingHyperBinning if the HyperBinningMaker has" << std::endl;
+    ERROR_LOG << "a single HyperVolume";
+  }
+  else{
+    INFO_LOG << "Congratulations, you've taken the bold step of calling the updateFromExistingHyperBinning function" << std::endl;
+  }
+  
+  HyperPointSet points     = _hyperPointSets      .at(0);
+  HyperPointSet shadPoints = _shadowHyperPointSets.at(0); 
+
+  _hyperCuboids         .clear();   
+  _linkedBins           .clear();
+  _status               .clear();  
+  _dimSpecificStatus    .clear();  
+  
+
+  int nvols = binning.getNumHyperVolumes();
+  
+  for (int i = 0; i < nvols; i++){
+    _hyperCuboids.push_back( binning.getHyperVolume(i).at(0)  );
+    _linkedBins  .push_back( binning.getLinkedHyperVolumes(i) );
+
+    if ( _linkedBins.at(i).size() == 0 ){
+      _status           .push_back( VolumeStatus::CONTINUE );
+      _dimSpecificStatus.push_back( std::vector<int>( binning.getDimension(), VolumeStatus::CONTINUE ) );
+    }
+    else {
+      _status           .push_back( VolumeStatus::DONE );
+      _dimSpecificStatus.push_back( std::vector<int>( binning.getDimension(), VolumeStatus::DONE ) );
+    }
+
+  }
+  
+  _hyperPointSets.clear();  
+  _hyperPointSets.resize(nvols, HyperPointSet(binning.getDimension()) );
+
+  std::vector<int> binNums = binning.getBinNum(points);
+
+  for (unsigned i = 0; i < points.size(); i++){
+    int binNum = binNums.at(i);
+    if (binNum == -1) continue;
+    int volNum = binning.getHyperVolumeNumber( binNum );
+    _hyperPointSets.at(volNum).push_back( points.at(i) );
+  }
+
+  _shadowHyperPointSets.clear();  
+  _shadowHyperPointSets.resize(nvols, HyperPointSet(binning.getDimension()) );
+
+
+  std::vector<int> shadBinNums = binning.getBinNum(shadPoints);
+  
+  for (unsigned i = 0; i < shadPoints.size(); i++){
+    int binNum = shadBinNums.at(i);
+    if (binNum == -1) continue;
+    int volNum = binning.getHyperVolumeNumber( binNum );
+    _hyperPointSets.at(volNum).push_back( shadPoints.at(i) );
+  }  
+  
+  
+}
+
+
+
+
 ///Add a shadow HyperPointSet to the HyperBinningMaker. This must be done
 ///before any adaptive binning algorithms commence.
 ///
@@ -295,6 +365,9 @@ requirements. These are:
 int HyperBinningMaker::split(int volumeNumber, int dimension, double splitPoint){
   
   //check if we're allowed to bin in this dimension
+
+  VERBOSE_LOG << "Calling the HyperBinningMaker::split function that gets used by all the algorithms" << std::endl;    
+
 
   if (isValidBinningDimension(dimension) == false) {
     VERBOSE_LOG << "This isn't a valid binning dimension, so not splitting" << std::endl;    

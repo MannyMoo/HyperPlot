@@ -134,6 +134,9 @@ class HyperBinningMaker {
     
   HyperBinningMaker(const HyperCuboid& binningRange, const HyperPointSet& data);
   
+  HyperBinningMaker(const HyperBinning& binning    , const HyperPointSet& data);
+
+
   /* ----------------------------------------------------------------*/
 
   virtual void makeBinning() = 0;
@@ -172,6 +175,8 @@ class HyperBinningMaker {
   void setHyperFunction(HyperFunction* fnc);  
   
   void drawAfterEachIteration(TString path);
+
+  void updateFromExistingHyperBinning( const HyperBinning& binning );
 
   void setNames(HyperName names){_names = names;}
   /**< used for the axis titles on any of the HyperBinningHistograms I create */

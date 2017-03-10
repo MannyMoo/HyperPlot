@@ -54,7 +54,8 @@ class AlgOption{
     AXIS_NAMES,                 /**< The axis names (that are provided by a HyperName) */
     FUNC,                       /**< Pass a HyperFunction to the binning alg */
     NUM_BIN_PAIRS,              /**< Set the number of bin pairs in the PhaseBinning algorithm (cisi binning) */
-    PHASE_BIN_EDGES             /**< Set the bin edges for the phase binning (cisi binning) */
+    PHASE_BIN_EDGES,            /**< Set the bin edges for the phase binning (cisi binning) */
+    START_BINNING               /**< Rather than stating from some n-dim limits, start from an exisiting binning */
   };
 
   
@@ -71,6 +72,8 @@ class AlgOption{
   TString              _string;         /**< string         option */
   HyperName            _hyperName;      /**< HyperName      option */
   HyperFunction*       _hyperFunc;      /**< HyperFunction  option */
+  const HyperBinning*  _hyperBinning;   /**< HyperBinning   option */
+
 
   AlgOption();
 
@@ -94,6 +97,7 @@ class AlgOption{
   static AlgOption SnapToGrid         (bool val);
   static AlgOption NumPhaseBinPairs   (int val);
   static AlgOption PhaseBinEdges      (std::vector<double> val);
+  static AlgOption StartBinning       (const HyperBinning& binning);
 
 
   bool isEmpty();
@@ -109,6 +113,7 @@ class AlgOption{
   const HyperPointSet& getHyperPointSetOpt();
   HyperName            getHyperNameOpt    ();
   HyperFunction*       getFuncOpt         ();
+  const HyperBinning*  getHyperBinningOpt ();
 
 
   ~AlgOption();
@@ -140,7 +145,7 @@ private:
   /**< list of options that will be given to the HyperBinningMaker */
 
   Alg _alg;
-  /**< the algorithm (HyperBinningMaker) that will be used in a
+  /**< the algorithm (e.g. HyperBinningMakerMint) that will be used in a
   particular instance of the class */
 
 
