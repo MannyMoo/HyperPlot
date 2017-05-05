@@ -41,7 +41,7 @@ class HyperBinningPainter {
   void useDensity(bool val){_density = val;}
   /**< Am I drawing the bin contents or the density? */ 
 
-  virtual void draw(TString path = "");
+  virtual void draw(TString path = "", TString option = "");
 
   virtual ~HyperBinningPainter();
 

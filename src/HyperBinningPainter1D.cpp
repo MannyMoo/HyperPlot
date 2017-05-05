@@ -54,8 +54,10 @@ TH1D* HyperBinningPainter1D::getHistogram(TString histname){
 }
 
 /** Draw the HyperBinningHistogram  */
-void HyperBinningPainter1D::draw(TString path){
+void HyperBinningPainter1D::draw(TString path, TString option){
   
+  option = option; //remove conpilation warning
+
   TH1D* hist = getHistogram("tempToDraw");
 
   RootPlotter1D plotter(hist);

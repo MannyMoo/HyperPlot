@@ -36,7 +36,7 @@ class HyperBinningPainter1D : public HyperBinningPainter {
   
   TH1D* getHistogram(TString histname);
 
-  virtual void draw(TString path = "");
+  virtual void draw(TString path = "", TString option = "");
 
   virtual ~HyperBinningPainter1D();
 

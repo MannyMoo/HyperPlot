@@ -398,7 +398,7 @@ bool HyperBinning::isPrimaryVolume(int volumeNumber) const{
 int HyperBinning::followBinLinks(const HyperPoint& coords, int motherVolumeNumber) const{
   
   //find the linked volumes
-  const std::vector<int> linkedVolumes = getLinkedHyperVolumes(motherVolumeNumber);
+  std::vector<int> linkedVolumes = getLinkedHyperVolumes(motherVolumeNumber);
   
   int volumeNumber = -1;
   

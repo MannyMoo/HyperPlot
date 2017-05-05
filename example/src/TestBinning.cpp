@@ -4,6 +4,7 @@
 #include "UniformBinning.h"
 #include "CyclicPhaseBins.h"
 #include "HyperCuboidSet.h"
+#include "HyperStatisticsFinder.h"
 
 #include "LHCbStyle.h"
 
@@ -83,7 +84,11 @@ class PhaseMotion : public HyperFunction{
       return phase;
     }
     
-    return (double)_phaseBinning.getBinNumber(phase);
+    int symBinNum = _phaseBinning.getBinNumber(phase);
+    symBinNum -= _phaseBinning.getNumBins()/2;
+    if (symBinNum >= 0) symBinNum++;
+
+    return (double)symBinNum;
 
   } 
 
@@ -133,9 +138,9 @@ void DrawHistogramSlices(TString filename, TString outdir, int nSlicesPerSet = 5
   
   //take the slice point to be the center of the limits
   HyperPoint slicePoint = hist.getLimits().getCenter();
-  
+
   //Draw a load of slices
-  hist.draw2DSliceSet(outdir, nSlicesPerSet, slicePoint);
+  hist.draw2DSliceSet(outdir, nSlicesPerSet, slicePoint, "Edges1Edges2HashNeg");
 
 }
 
@@ -202,7 +207,7 @@ void DataBinningExample(int dim){
     /*** This minimum bin width allowed. Can also pass a   */
     /*** HyperPoint if you would like different min bin    */
     /*** widths for each dimension                         */
-    AlgOption::MinBinWidth        (0.0001),
+    AlgOption::MinBinWidth        (0.3),
 
     /*** If you want to use a shadow dataset, pass it here.*/
     /*** This is useful when you want to bin the ratio of  */
@@ -230,6 +235,56 @@ void DataBinningExample(int dim){
     
   );
   
+  HyperHistogram hist3(limits, points1, 
+
+    /*** Name of the binning algorithm you want to use     */
+    HyperBinningAlgorithms::SMART_MULTI, 
+
+    /***  The minimum number of events allowed in each bin */
+    /***  from the HyperPointSet provided (points1)        */
+    AlgOption::MinBinContent      (35.0),    
+
+    /*** The minimum number of events allowed in each bin  */
+    /*** from the shadow HyperPointSet provided. Providing */
+    /*** a shadow set is optional (see option below)       */
+    AlgOption::MinShadowBinContent(35.0),    
+
+    /*** This minimum bin width allowed. Can also pass a   */
+    /*** HyperPoint if you would like different min bin    */
+    /*** widths for each dimension                         */
+    AlgOption::MinBinWidth        (0.0001),
+
+    /*** If you want to use a shadow dataset, pass it here.*/
+    /*** This is useful when you want to bin the ratio of  */
+    /*** two samples.                                      */
+    //AlgOption::UseShadowData      (points2),
+
+    /*** If you want to use the sum of weights rather than */
+    /*** the number of events, set this to true.           */    
+    AlgOption::UseWeights         (false),
+
+    /*** Some algorithms use a random number generator. Set*/
+    /*** the seed here                                     */
+    AlgOption::RandomSeed         (1),
+
+    /*** What dimesnion would you like to split first? Only*/
+    /*** applies to certain algortihms                     */
+    AlgOption::StartDimension     (0),
+
+    /*** What dimesnions would you like to bin in?         */
+    AlgOption::BinningDimensions  (binningDims),
+
+    /*** Setting this option will make the agorithm draw   */
+    /*** the binning scheme at each iteration              */
+    AlgOption::DrawAlgorithm(outputdir + "AlgorithmB"),
+
+    /*** Setting this option will make the agorithm draw   */
+    /*** the binning scheme at each iteration              */
+    AlgOption::StartBinning(static_cast<const HyperBinning&>(hist1.getBinning()))
+    
+  );
+
+
   INFO_LOG << "The maximum bin content is " << hist1.getMax() << std::endl;
 
   hist1.setNames(name);
@@ -393,8 +448,9 @@ void FunctionBinningExample(int dim, int functionNum, int nbinpairs){
     hist.draw(outputdir + "PhaseBinning");
   }
   else{
-    TString slicedir = outputdir + "slices/HyperBinning";
+    TString slicedir = outputdir + "slices/";
     gSystem->Exec("mkdir " + slicedir);    
+    slicedir += "HyperBinning";
     DrawHistogramSlices(outputdir + "PhaseBinning.root", slicedir);
   }
 
@@ -443,6 +499,8 @@ void PrintHelp(){
   INFO_LOG << std::endl << std::endl;
 
 }
+
+
 
 int main(int argc, char** argv) {
   

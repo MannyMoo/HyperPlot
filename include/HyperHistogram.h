@@ -124,11 +124,11 @@ class HyperHistogram : public HistogramBase, public HyperFunction {
   HyperHistogram slice(std::vector<int> sliceDims, const HyperPoint& slicePoint) const;
   std::vector<HyperHistogram> slice(std::vector<int> sliceDims, const HyperPointSet& slicePoints) const;
 
-  void draw2DSlice   (TString path, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint) const;
-  void draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int sliceSetDim, int nSlices, const HyperPoint& slicePoint) const;
-  void draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint) const;
-  void draw2DSliceSet(TString path, int nSlices, const HyperPoint& slicePoint) const;
-  void drawRandom2DSlice(TString path, TRandom* random = gRandom) const;
+  void draw2DSlice   (TString path, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint, TString options = "") const;
+  void draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int sliceSetDim, int nSlices, const HyperPoint& slicePoint, TString options = "") const;
+  void draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint, TString options = "") const;
+  void draw2DSliceSet(TString path, int nSlices, const HyperPoint& slicePoint, TString options = "") const;
+  void drawRandom2DSlice(TString path, TRandom* random = gRandom, TString options = "") const;
 
 
   HyperCuboid getLimits() const;
@@ -156,8 +156,8 @@ class HyperHistogram : public HistogramBase, public HyperFunction {
   
   void saveToTxtFile(TString filename) const;
 
-  void draw(TString path);
-  void drawDensity(TString path);
+  void draw(TString path, TString options = "");
+  void drawDensity(TString path, TString options = "");
   
   void mergeBinsWithSameContent();
   

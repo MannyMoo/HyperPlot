@@ -71,7 +71,7 @@ void HyperBinningPainter2D::drawBinEdge(RootPlotter2D* plotter, HyperCuboid* bin
   topLine   ->SetLineColor(kBlack);
   bottomLine->SetLineColor(kBlack);
 
-//
+  //
   leftLine  ->SetLineStyle(3);
   //rightLine ->SetLineStyle(3);
   //topLine   ->SetLineStyle(3);
@@ -83,6 +83,176 @@ void HyperBinningPainter2D::drawBinEdge(RootPlotter2D* plotter, HyperCuboid* bin
   plotter->addObject(bottomLine);
 
 }
+
+
+/** draw edges between bins with different contents */
+void HyperBinningPainter2D::drawBinEdges2(RootPlotter2D* plotter){
+
+  double minBinWidthX = 10e50;
+  double minBinWidthY = 10e50;
+
+  for(int i = 0; i < getBinning().getNumBins(); i++){
+    HyperCuboid vol = getBinning().getBinHyperVolume(i).getLimits();
+    double binWidthX = vol.getWidth(0);
+    double binWidthY = vol.getWidth(1);
+    if (binWidthX < minBinWidthX) minBinWidthX = binWidthX;
+    if (binWidthY < minBinWidthY) minBinWidthY = binWidthY;
+  }
+
+  for(int i = 0; i < getBinning().getNumBins(); i++) drawBinEdge2(plotter, i, minBinWidthX, minBinWidthY);
+}
+
+/** draw edges between bins with different contents */
+void HyperBinningPainter2D::drawBinEdge2(RootPlotter2D* plotter, int bin, double minWidX, double minWidY){
+  
+  for (int i = 0; i < getBinning().getBinHyperVolume(bin).size(); i++){
+    HyperCuboid temp (getBinning().getBinHyperVolume(bin).getHyperCuboid(i));
+    drawBinEdge2(plotter, &temp, minWidX, minWidY);
+  }
+}
+
+/** draw edges between bins with different contents */
+void HyperBinningPainter2D::drawBinEdge2(RootPlotter2D* plotter, HyperCuboid* bin, double minWidX, double minWidY){
+
+  drawBinEdge2(plotter, bin, 0 , minWidX, minWidY);
+  drawBinEdge2(plotter, bin, 1 , minWidX, minWidY);
+  drawBinEdge2(plotter, bin, 2 , minWidX, minWidY);
+  drawBinEdge2(plotter, bin, 3 , minWidX, minWidY);
+  
+}
+
+/** draw edges between bins with different contents */
+void HyperBinningPainter2D::drawBinEdge2(RootPlotter2D* plotter, HyperCuboid* bin, int edge, double minWidX, double minWidY){
+  
+  double binContent = _histogram->getVal( bin->getCenter() );
+  TLine* line = 0;
+
+  if (edge == 0) {  //left edge
+
+    HyperPoint cornerLow (bin->getLowCorner().at(0)-minWidX*0.5, bin->getLowCorner ().at(1)+minWidY*0.5);
+    HyperPoint cornerHigh(bin->getLowCorner().at(0)-minWidX*0.5, bin->getHighCorner().at(1)-minWidY*0.5);   
+    int    binNumLow  = getBinning().getBinNum( cornerLow  ); 
+    int    binNumHigh = getBinning().getBinNum( cornerHigh ); 
+    
+    if (binNumLow  == -1 ) return;
+    if (binNumHigh == -1 ) return;
+    
+    double binConLow  = _histogram->getBinContent(binNumLow );
+    double binConHigh = _histogram->getBinContent(binNumHigh);
+    
+    HyperCuboid binLow  = getBinning().getBinHyperVolume(binNumLow ).at(0);
+    HyperCuboid binHigh = getBinning().getBinHyperVolume(binNumHigh).at(0);
+
+    if (binNumLow == binNumHigh && binContent == binConLow) return;
+    else if (binNumLow == binNumHigh && binContent != binConLow) {
+      line = new TLine( bin->getLowCorner().at(0), bin->getLowCorner ().at(1), bin->getLowCorner().at(0), bin->getHighCorner().at(1) );
+    }
+    else if (binConLow != binContent){
+      line = new TLine( bin->getLowCorner().at(0), bin->getLowCorner ().at(1), bin->getLowCorner().at(0), binLow.getHighCorner().at(1) );
+    }
+    else if (binConHigh != binContent){
+      line = new TLine( bin->getLowCorner().at(0), binHigh.getLowCorner ().at(1), bin->getLowCorner().at(0), bin->getHighCorner().at(1) );
+    }
+
+  }
+  
+  if (edge == 1) {  //right edge
+  
+    HyperPoint cornerLow (bin->getHighCorner().at(0)+minWidX*0.5, bin->getLowCorner ().at(1)+minWidY*0.5);
+    HyperPoint cornerHigh(bin->getHighCorner().at(0)+minWidX*0.5, bin->getHighCorner().at(1)-minWidY*0.5);   
+    int    binNumLow  = getBinning().getBinNum( cornerLow  ); 
+    int    binNumHigh = getBinning().getBinNum( cornerHigh ); 
+  
+    if (binNumLow  == -1 ) return;
+    if (binNumHigh == -1 ) return;
+  
+    double binConLow  = _histogram->getBinContent(binNumLow );
+    double binConHigh = _histogram->getBinContent(binNumHigh);
+    
+    HyperCuboid binLow  = getBinning().getBinHyperVolume(binNumLow ).at(0);
+    HyperCuboid binHigh = getBinning().getBinHyperVolume(binNumHigh).at(0);
+  
+    if (binNumLow == binNumHigh && binContent == binConLow) return;
+    else if (binNumLow == binNumHigh && binContent != binConLow) {
+      line = new TLine( bin->getHighCorner().at(0), bin->getLowCorner ().at(1), bin->getHighCorner().at(0), bin->getHighCorner().at(1) );
+    }
+    else if (binConLow != binContent){
+      line = new TLine( bin->getHighCorner().at(0), bin->getLowCorner ().at(1), bin->getHighCorner().at(0), binLow.getHighCorner().at(1) );
+    }
+    else if (binConHigh != binContent){
+      line = new TLine( bin->getHighCorner().at(0), binHigh.getLowCorner ().at(1), bin->getHighCorner().at(0), bin->getHighCorner().at(1) );
+    }
+  
+  }
+  
+  if (edge == 2) {  //top edge
+  
+    HyperPoint cornerLow (bin->getLowCorner ().at(0)+minWidX*0.5, bin->getHighCorner().at(1)+minWidY*0.5);
+    HyperPoint cornerHigh(bin->getHighCorner().at(0)-minWidX*0.5, bin->getHighCorner().at(1)+minWidY*0.5);   
+    int    binNumLow  = getBinning().getBinNum( cornerLow  ); 
+    int    binNumHigh = getBinning().getBinNum( cornerHigh ); 
+  
+    if (binNumLow  == -1 ) return;
+    if (binNumHigh == -1 ) return;
+  
+    double binConLow  = _histogram->getBinContent(binNumLow );
+    double binConHigh = _histogram->getBinContent(binNumHigh);
+    
+    HyperCuboid binLow  = getBinning().getBinHyperVolume(binNumLow ).at(0);
+    HyperCuboid binHigh = getBinning().getBinHyperVolume(binNumHigh).at(0);
+  
+    if (binNumLow == binNumHigh && binContent == binConLow) return;
+    else if (binNumLow == binNumHigh && binContent != binConLow) {
+      line = new TLine( bin->getLowCorner ().at(0), bin->getHighCorner().at(1), bin->getHighCorner().at(0), bin->getHighCorner().at(1) );
+    }
+    else if (binConLow != binContent){
+      line = new TLine( bin->getLowCorner ().at(0), bin->getHighCorner().at(1), binLow.getHighCorner().at(0), bin->getHighCorner().at(1)  );
+    }
+    else if (binConHigh != binContent){
+      line = new TLine( binHigh.getLowCorner ().at(0), bin->getHighCorner().at(1), bin->getHighCorner().at(0), bin->getHighCorner().at(1)  );
+    }
+  
+  }
+  
+  if (edge == 3) {  //bottom edge
+  
+    HyperPoint cornerLow (bin->getLowCorner ().at(0)+minWidX*0.5, bin->getLowCorner().at(1)-minWidY*0.5);
+    HyperPoint cornerHigh(bin->getHighCorner().at(0)-minWidX*0.5, bin->getLowCorner().at(1)-minWidY*0.5);   
+    int    binNumLow  = getBinning().getBinNum( cornerLow  ); 
+    int    binNumHigh = getBinning().getBinNum( cornerHigh ); 
+  
+    if (binNumLow  == -1 ) return;
+    if (binNumHigh == -1 ) return;     
+    double binConLow  = _histogram->getBinContent(binNumLow );
+    double binConHigh = _histogram->getBinContent(binNumHigh);
+    
+    HyperCuboid binLow  = getBinning().getBinHyperVolume(binNumLow ).at(0);
+    HyperCuboid binHigh = getBinning().getBinHyperVolume(binNumHigh).at(0);
+  
+    if (binNumLow == binNumHigh && binContent == binConLow) return;
+    else if (binNumLow == binNumHigh && binContent != binConLow) {
+      line = new TLine( bin->getLowCorner ().at(0), bin->getLowCorner().at(1), bin->getHighCorner().at(0), bin->getLowCorner().at(1) );
+    }
+    else if (binConLow != binContent){
+      line = new TLine( bin->getLowCorner ().at(0), bin->getLowCorner().at(1), binLow.getHighCorner().at(0), bin->getLowCorner().at(1)  );
+    }
+    else if (binConHigh != binContent){
+      line = new TLine( binHigh.getLowCorner ().at(0), bin->getLowCorner().at(1), bin->getHighCorner().at(0), bin->getLowCorner().at(1)  );
+    }
+  
+  }
+  
+  if (line == 0) return;
+
+  line  ->SetLineWidth(1);
+  line  ->SetLineColor(kBlack);
+  line  ->SetLineStyle(1);
+
+  plotter->addObject(line);
+
+
+}
+
 
 /** Code stolen from the THistPainter - choose the colour to
 make the bin based on the colour scale of the TH2D */
@@ -122,30 +292,51 @@ void HyperBinningPainter2D::drawBinNumbers(RootPlotter2D* plotter, int bin){
 }
 
 /** add filled bins to the Plotter (for all HyperVolumes) */
-void HyperBinningPainter2D::drawFilledBins(RootPlotter2D* plotter){
-  for(int i = 0; i < getBinning().getNumBins(); i++) drawFilledBin(plotter, i);
+void HyperBinningPainter2D::drawFilledBins(RootPlotter2D* plotter, bool hashNeg ){
+  for(int i = 0; i < getBinning().getNumBins(); i++) drawFilledBin(plotter, i, hashNeg);
 }
 
 /** add filled bins to the Plotter (for all HyperVolumes) */
-void HyperBinningPainter2D::drawFilledBin(RootPlotter2D* plotter, int bin){
+void HyperBinningPainter2D::drawFilledBin(RootPlotter2D* plotter, int bin, bool hashNeg){
   
   double binContent = _histogram->getBinContent(bin);
   if (_density == true ) binContent = _histogram->getFrequencyDensity(bin);
+  
+  bool neg = false;
+  if (hashNeg == true && binContent < 0.0) {
+    binContent = -binContent;
+    neg = true;
+  }
 
   for (int i = 0; i < getBinning().getBinHyperVolume(bin).size(); i++){
     HyperCuboid temp (getBinning().getBinHyperVolume(bin).getHyperCuboid(i));
     drawFilledBin(plotter, &temp, binContent);
+    if (neg){
+      drawFilledBin(plotter, &temp, 1, 3344);
+    }
   }
 
 }
 
+
 /** add filled bins to the Plotter (for all HyperVolumes) */
 void HyperBinningPainter2D::drawFilledBin(RootPlotter2D* plotter, HyperCuboid* bin, double binContents){
+  
+  int fillColor = getFillColour(binContents);
+  int fillStyle = 1001;
+
+  drawFilledBin(plotter, bin, fillColor, fillStyle);
+
+}
+
+/** add filled bins to the Plotter (for all HyperVolumes) */
+void HyperBinningPainter2D::drawFilledBin(RootPlotter2D* plotter, HyperCuboid* bin, int fillColor, int fillStyle){
 
   TBox* box = new TBox(bin->getLowCorner().at(0) , bin->getLowCorner().at(1), bin->getHighCorner().at(0) , bin->getHighCorner().at(1));
-  box->SetFillColor( getFillColour(binContents) );
+  box->SetFillColor( fillColor );
   box->SetLineWidth(0.0);
-  box->SetLineColor( getFillColour(binContents) );
+  box->SetFillStyle( fillStyle );
+  box->SetLineColor( fillColor );
   plotter->addObject(box);
 
 }
@@ -159,8 +350,13 @@ void HyperBinningPainter2D::addHyperPoints(TH2D* histogram){
 }
 
 /** Draw the HyperBinningHistogram  */
-void HyperBinningPainter2D::draw(TString path){
-    
+void HyperBinningPainter2D::draw(TString path, TString option){
+  
+  bool drawBinEd1     = option.Contains("Edges1" );
+  bool drawBinEd2     = option.Contains("Edges2" );
+  bool drawBinNums    = option.Contains("BinNums");
+  bool drawHashedNeg  = option.Contains("HashNeg");
+
   double x_min = getBinning().getMin(0);
   double x_max = getBinning().getMax(0);
   double y_min = getBinning().getMin(1);
@@ -178,6 +374,11 @@ void HyperBinningPainter2D::draw(TString path){
   if (_density == true){
     min = _histogram->getMinDensity();
     max = _histogram->getMaxDensity();
+  }
+  
+  if (drawHashedNeg){
+    min = min<0.0?0.0:min;
+    max = fabs(max)>fabs(min)?fabs(max):fabs(min);
   }
 
   if (_histogram   != 0){
@@ -200,9 +401,10 @@ void HyperBinningPainter2D::draw(TString path){
     box->SetFillColor( 0 );
     box->SetLineWidth(0.0);
     plotter.addObject(box)  ;
-    drawFilledBins(&plotter);
-    drawBinEdges(&plotter)  ;
-    //drawBinNumbers(&plotter);
+    drawFilledBins(&plotter, drawHashedNeg);
+    if (drawBinEd1    ) drawBinEdges  (&plotter);
+    if (drawBinEd2    ) drawBinEdges2 (&plotter);
+    if (drawBinNums   ) drawBinNumbers(&plotter);
   }
 
   plotter.plot(path, "COLZ");

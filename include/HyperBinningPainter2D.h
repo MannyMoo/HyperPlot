@@ -45,16 +45,24 @@ class HyperBinningPainter2D : public HyperBinningPainter {
   
   void addHyperPoints(TH2D* histogram);
 
-  void drawFilledBins(RootPlotter2D* plotter);
-  void drawFilledBin(RootPlotter2D* plotter, int bin);
+  void drawFilledBins(RootPlotter2D* plotter, bool hashNeg = false);
+  void drawFilledBin(RootPlotter2D* plotter, int bin, bool hashNeg = false);
   void drawFilledBin(RootPlotter2D* plotter, HyperCuboid* bin, double binContents);
+  void drawFilledBin(RootPlotter2D* plotter, HyperCuboid* bin, int fillColor, int fillStyle);
+
 
   void drawBinEdges(RootPlotter2D* plotter);
   void drawBinEdge(RootPlotter2D* plotter, int bin);
   void drawBinEdge(RootPlotter2D* plotter, HyperCuboid* bin);
 
-  void drawBinNumbers(RootPlotter2D* plotter);
 
+  void drawBinEdges2(RootPlotter2D* plotter);
+  void drawBinEdge2(RootPlotter2D* plotter, int bin, double minWidX, double minWidY);
+  void drawBinEdge2(RootPlotter2D* plotter, HyperCuboid* bin, double minWidX, double minWidY);
+  void drawBinEdge2(RootPlotter2D* plotter, HyperCuboid* bin, int edge, double minWidX, double minWidY);
+
+
+  void drawBinNumbers(RootPlotter2D* plotter);
   void drawBinNumbers(RootPlotter2D* plotter, int bin);
 
   public:
@@ -62,7 +70,7 @@ class HyperBinningPainter2D : public HyperBinningPainter {
   HyperBinningPainter2D(BinningBase* binning, HyperPointSet* hyperPoints = 0);
   HyperBinningPainter2D(HyperHistogram* histogram);
 
-  virtual void draw(TString path = "");
+  virtual void draw(TString path = "", TString option = "");
 
   ~HyperBinningPainter2D();
 

@@ -486,6 +486,8 @@ void HyperHistogram::mergeBinsWithSameContent(){
 
   }
   
+  volumeKept.clear();
+
   //Create a new HyperVolumeBinning with the bins removed
   HyperBinning* binningNew;
   
@@ -540,7 +542,6 @@ void HyperHistogram::mergeBinsWithSameContent(){
     count++;
   }
   
-  
 
   std::vector<int> primVolNums = hyperBinning.getPrimaryVolumeNumbers();
   
@@ -549,6 +550,8 @@ void HyperHistogram::mergeBinsWithSameContent(){
     int newVolNum = oldToNewVolumeNum[oldVolNum];
     binningNew->addPrimaryVolumeNumber(newVolNum);
   }
+
+  oldToNewVolumeNum.clear();
 
   INFO_LOG << "Filled the new binning with reduced bins" << std::endl;
 
@@ -561,7 +564,8 @@ void HyperHistogram::mergeBinsWithSameContent(){
 
   INFO_LOG << "You have managed to remove " << hyperBinning.getNumBins() - binningNew->getNumBins() << " bins with the same content" << std::endl;
   
-  if ( hyperBinning.getNumBins() - binningNew->getNumBins() > 0 ) newHist.mergeBinsWithSameContent();
+  bool moreBinsToMerge = false;
+  if ( hyperBinning.getNumBins() - binningNew->getNumBins() > 0 ) moreBinsToMerge = true; 
   
   if (hyperBinning.isDiskResident() == true){
     TString filenm = hyperBinning.filename();
@@ -575,10 +579,9 @@ void HyperHistogram::mergeBinsWithSameContent(){
     *this = newHist;
   }  
   
-
-
   delete binningNew;
-
+  
+  if (moreBinsToMerge) this->mergeBinsWithSameContent();
 
 }
 
@@ -588,20 +591,20 @@ used depends on the dimensionality of the data.
 This just plots the raw bin contents, not the 
 frequency density.
 */
-void HyperHistogram::draw(TString path){
+void HyperHistogram::draw(TString path, TString options){
   
   if (_binning->getDimension() == 1){
     HyperBinningPainter1D painter(this);
-    painter.draw(path);  
+    painter.draw(path, options);  
   }
   else if (_binning->getDimension() == 2){
 
     HyperBinningPainter2D painter(this);
-    painter.draw(path);
+    painter.draw(path, options);
   } 
   else{
     HyperBinningPainter   painter(this);
-    painter.draw(path);
+    painter.draw(path, options);
   }
 
 }
@@ -610,22 +613,22 @@ void HyperHistogram::draw(TString path){
 Draw the frequency density of the HyperHistogram 
 - the drawing class used depends on the dimensionality of the data.
 */
-void HyperHistogram::drawDensity(TString path){
+void HyperHistogram::drawDensity(TString path, TString options){
   
   if (_binning->getDimension() == 1){
     HyperBinningPainter1D painter(this);
     painter.useDensity(true);
-    painter.draw(path);  
+    painter.draw(path, options);  
   }
   else if (_binning->getDimension() == 2){
     HyperBinningPainter2D painter(this);
     painter.useDensity(true);
-    painter.draw(path);
+    painter.draw(path, options);
   } 
   else{
     HyperBinningPainter   painter(this);
     painter.useDensity(true);
-    painter.draw(path);
+    painter.draw(path, options);
   }
 
 }
@@ -819,7 +822,7 @@ std::vector<HyperHistogram> HyperHistogram::slice(std::vector<int> sliceDims, co
 
 
 
-void HyperHistogram::draw2DSlice(TString path, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint) const{
+void HyperHistogram::draw2DSlice(TString path, int sliceDimX, int sliceDimY, const HyperPoint& slicePoint, TString options) const{
   
   std::vector<int   > sliceDims;
 
@@ -830,11 +833,11 @@ void HyperHistogram::draw2DSlice(TString path, int sliceDimX, int sliceDimY, con
   }
 
   HyperHistogram sliceHist = slice( sliceDims, slicePoint );
-  sliceHist.draw(path);
+  sliceHist.draw(path, options);
 
 }
 
-void HyperHistogram::drawRandom2DSlice(TString path, TRandom* random) const{
+void HyperHistogram::drawRandom2DSlice(TString path, TRandom* random, TString options) const{
 
   int dim = getDimension();
 
@@ -851,11 +854,11 @@ void HyperHistogram::drawRandom2DSlice(TString path, TRandom* random) const{
 
   HyperPoint slicepoint = getLimits().getRandomPoint(random);
 
-  draw2DSlice(path, slicedimx, slicedimy, slicepoint);
+  draw2DSlice(path, slicedimx, slicedimy, slicepoint, options);
 
 }
 
-void HyperHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int sliceSetDim, int nSlices, const HyperPoint& slicePoint) const{
+void HyperHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int sliceSetDim, int nSlices, const HyperPoint& slicePoint, TString options) const{
 
   std::vector<int   > _sliceDims;
 
@@ -893,12 +896,12 @@ void HyperHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, 
   std::vector<HyperHistogram> hists = slice(_sliceDims, slicePoints);
   
   for (unsigned i = 0; i < hists.size(); i++){
-    hists.at(i).draw(paths.at(i));
+    hists.at(i).draw(paths.at(i), options);
   }
 
 }
 
-void HyperHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint) const{
+void HyperHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, int nSlices, const HyperPoint& slicePoint, TString options) const{
   
   //Get the slice dimesnions from the given dimensions
   std::vector<int   > sliceDims;
@@ -949,7 +952,7 @@ void HyperHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, 
   std::vector<HyperHistogram> hists = slice(sliceDims, slicePoints);
   
   for (unsigned i = 0; i < hists.size(); i++){
-    hists.at(i).draw(paths.at(i));
+    hists.at(i).draw(paths.at(i), options);
   }
 
   
@@ -957,7 +960,7 @@ void HyperHistogram::draw2DSliceSet(TString path, int sliceDimX, int sliceDimY, 
 
 }
 
-void HyperHistogram::draw2DSliceSet(TString path, int nSlices, const HyperPoint& slicePoint) const{
+void HyperHistogram::draw2DSliceSet(TString path, int nSlices, const HyperPoint& slicePoint, TString options) const{
   
 
   
@@ -972,7 +975,7 @@ void HyperHistogram::draw2DSliceSet(TString path, int nSlices, const HyperPoint&
       thsPath += "vs";
       thsPath += j;
 
-      draw2DSliceSet(thsPath, i, j, nSlices, slicePoint);
+      draw2DSliceSet(thsPath, i, j, nSlices, slicePoint, options);
     }
   }
   

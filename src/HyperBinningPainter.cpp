@@ -9,8 +9,11 @@ HyperBinningPainter::HyperBinningPainter(HyperHistogram* histogram) :
 }
 
 /** Draw the HyperBinningHistogram */
-void HyperBinningPainter::draw(TString path){
+void HyperBinningPainter::draw(TString path, TString option){
   
+  option = option; //remove conpilation warning
+
+
   int nBins = _histogram->getNBins();
   
   //double volumeSum = 0.0;
