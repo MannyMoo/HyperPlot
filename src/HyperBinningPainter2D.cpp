@@ -129,8 +129,8 @@ void HyperBinningPainter2D::drawBinEdge2(RootPlotter2D* plotter, HyperCuboid* bi
 
   if (edge == 0) {  //left edge
 
-    HyperPoint cornerLow (bin->getLowCorner().at(0)-minWidX*0.5, bin->getLowCorner ().at(1)+minWidY*0.5);
-    HyperPoint cornerHigh(bin->getLowCorner().at(0)-minWidX*0.5, bin->getHighCorner().at(1)-minWidY*0.5);   
+    HyperPoint cornerLow (bin->getLowCorner().at(0)-minWidX*0.5, bin->getLowCorner ().at(1)+minWidY*0.05);
+    HyperPoint cornerHigh(bin->getLowCorner().at(0)-minWidX*0.5, bin->getHighCorner().at(1)-minWidY*0.05);   
     int    binNumLow  = getBinning().getBinNum( cornerLow  ); 
     int    binNumHigh = getBinning().getBinNum( cornerHigh ); 
     
@@ -158,8 +158,8 @@ void HyperBinningPainter2D::drawBinEdge2(RootPlotter2D* plotter, HyperCuboid* bi
   
   if (edge == 1) {  //right edge
   
-    HyperPoint cornerLow (bin->getHighCorner().at(0)+minWidX*0.5, bin->getLowCorner ().at(1)+minWidY*0.5);
-    HyperPoint cornerHigh(bin->getHighCorner().at(0)+minWidX*0.5, bin->getHighCorner().at(1)-minWidY*0.5);   
+    HyperPoint cornerLow (bin->getHighCorner().at(0)+minWidX*0.5, bin->getLowCorner ().at(1)+minWidY*0.05);
+    HyperPoint cornerHigh(bin->getHighCorner().at(0)+minWidX*0.5, bin->getHighCorner().at(1)-minWidY*0.05);   
     int    binNumLow  = getBinning().getBinNum( cornerLow  ); 
     int    binNumHigh = getBinning().getBinNum( cornerHigh ); 
   
@@ -187,8 +187,8 @@ void HyperBinningPainter2D::drawBinEdge2(RootPlotter2D* plotter, HyperCuboid* bi
   
   if (edge == 2) {  //top edge
   
-    HyperPoint cornerLow (bin->getLowCorner ().at(0)+minWidX*0.5, bin->getHighCorner().at(1)+minWidY*0.5);
-    HyperPoint cornerHigh(bin->getHighCorner().at(0)-minWidX*0.5, bin->getHighCorner().at(1)+minWidY*0.5);   
+    HyperPoint cornerLow (bin->getLowCorner ().at(0)+minWidX*0.05, bin->getHighCorner().at(1)+minWidY*0.5);
+    HyperPoint cornerHigh(bin->getHighCorner().at(0)-minWidX*0.05, bin->getHighCorner().at(1)+minWidY*0.5);   
     int    binNumLow  = getBinning().getBinNum( cornerLow  ); 
     int    binNumHigh = getBinning().getBinNum( cornerHigh ); 
   
@@ -216,8 +216,8 @@ void HyperBinningPainter2D::drawBinEdge2(RootPlotter2D* plotter, HyperCuboid* bi
   
   if (edge == 3) {  //bottom edge
   
-    HyperPoint cornerLow (bin->getLowCorner ().at(0)+minWidX*0.5, bin->getLowCorner().at(1)-minWidY*0.5);
-    HyperPoint cornerHigh(bin->getHighCorner().at(0)-minWidX*0.5, bin->getLowCorner().at(1)-minWidY*0.5);   
+    HyperPoint cornerLow (bin->getLowCorner ().at(0)+minWidX*0.05, bin->getLowCorner().at(1)-minWidY*0.5);
+    HyperPoint cornerHigh(bin->getHighCorner().at(0)-minWidX*0.05, bin->getLowCorner().at(1)-minWidY*0.5);   
     int    binNumLow  = getBinning().getBinNum( cornerLow  ); 
     int    binNumHigh = getBinning().getBinNum( cornerHigh ); 
   
