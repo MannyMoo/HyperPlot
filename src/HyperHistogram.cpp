@@ -1090,6 +1090,8 @@ void HyperHistogram::saveToTxtFile(TString filename) const{
   
   std::ofstream myfile;
   myfile.open (filename);
+  
+  int widthForVolNum = ceil(log10(nVolumes)) + 2; 
 
   for (int i = 0; i < nVolumes; i++ ){
     HyperVolume vol  = hyperBinning.getHyperVolume(i);
@@ -1109,14 +1111,20 @@ void HyperHistogram::saveToTxtFile(TString filename) const{
       isBin   = true;
     }
     
-    myfile << std::setw(4) << std::left;
-    if (isPrimary) myfile << "P"; 
-    if (isBin    ) myfile << "B"; 
-    if (!isBin   ) myfile << "V";
+    myfile << std::setw(widthForVolNum) << std::left << i;
+
+    TString binType = "";
+    if (isPrimary ) myfile << "P"; 
+    if (!isPrimary) myfile << "L"; 
+    if (isBin     ) myfile << "B"; 
+    if (!isBin    ) myfile << "V";
+
+    myfile << std::setw(4) << std::left << binType;
+
     
     int width = vol.getDimension()*10 + 10;
 
-    myfile <<  std::setw(width) << std::left << cube.getLowCorner() << std::setw(width) << std::left << cube.getHighCorner();
+    myfile << std::setw(width) << std::left << cube.getLowCorner() << std::setw(width) << std::left << cube.getHighCorner();
     
     if (isBin){
       myfile << std::setw(10) << std::left <<  content << std::setw(10) << std::left <<  error;
@@ -1135,6 +1143,42 @@ void HyperHistogram::saveToTxtFile(TString filename) const{
 
 
 }
+
+void HyperHistogram::saveToTxtFileNoLinks(TString filename, bool incError) const{
+  
+  if ( _binning->getBinningType() != "HyperBinning" ){
+    ERROR_LOG << "It is only possible to saveToTxtFile when using HyperBinning. Doing nothing." << std::endl;
+    return;
+  }
+  
+  const HyperBinning& hyperBinning = dynamic_cast<const HyperBinning&>( getBinning() );
+
+  int nBins = hyperBinning.getNumBins();
+  
+  std::ofstream myfile;
+  myfile.open (filename);
+
+  for (int i = 0; i < nBins; i++ ){
+    HyperVolume vol  = hyperBinning.getBinHyperVolume(i);
+    HyperCuboid cube = vol.getHyperCuboid(0);
+    double content = getBinContent(i);
+    double error   = getBinError  (i);
+
+    int width = vol.getDimension()*10 + 10;
+
+    myfile << std::setw(width) << std::left << cube.getLowCorner() << "     " << std::setw(width) << std::left << cube.getHighCorner();
+    myfile << "     ";
+    myfile << std::setw(10) << std::left <<  content;
+    if (incError) myfile << std::setw(10) << std::left <<  error;
+
+    myfile << std::endl;
+  }
+
+  myfile.close();
+
+
+}
+
 
 /**
 Get binning type from file
