@@ -1077,7 +1077,7 @@ void HyperHistogram::save(TString filename){
 /**
 Save the HyperHistogram to a .txt file
 */
-void HyperHistogram::saveToTxtFile(TString filename) const{
+void HyperHistogram::saveToTxtFile(TString filename, bool incError) const{
   
   if ( _binning->getBinningType() != "HyperBinning" ){
     ERROR_LOG << "It is only possible to saveToTxtFile when using HyperBinning. Doing nothing." << std::endl;
@@ -1115,7 +1115,7 @@ void HyperHistogram::saveToTxtFile(TString filename) const{
 
     TString binType = "";
     if (isPrimary ) myfile << "P"; 
-    if (!isPrimary) myfile << "L"; 
+    //if (!isPrimary) myfile << "L"; 
     if (isBin     ) myfile << "B"; 
     if (!isBin    ) myfile << "V";
 
@@ -1127,7 +1127,8 @@ void HyperHistogram::saveToTxtFile(TString filename) const{
     myfile << std::setw(width) << std::left << cube.getLowCorner() << std::setw(width) << std::left << cube.getHighCorner();
     
     if (isBin){
-      myfile << std::setw(10) << std::left <<  content << std::setw(10) << std::left <<  error;
+      myfile << std::setw(10) << std::left <<  content 
+      if (incError) myfile << std::setw(10) << std::left <<  error;
     }
 
     if (!isBin){

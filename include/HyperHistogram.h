@@ -154,7 +154,7 @@ class HyperHistogram : public HistogramBase, public HyperFunction {
   
   void printFull() const;
   
-  void saveToTxtFile(TString filename) const;
+  void saveToTxtFile(TString filename, bool incError = true) const;
   void saveToTxtFileNoLinks(TString filename, bool incError = true) const;
 
 
