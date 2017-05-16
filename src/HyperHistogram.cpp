@@ -1127,7 +1127,7 @@ void HyperHistogram::saveToTxtFile(TString filename, bool incError) const{
     myfile << std::setw(width) << std::left << cube.getLowCorner() << std::setw(width) << std::left << cube.getHighCorner();
     
     if (isBin){
-      myfile << std::setw(10) << std::left <<  content 
+      myfile << std::setw(10) << std::left <<  content;
       if (incError) myfile << std::setw(10) << std::left <<  error;
     }
 
