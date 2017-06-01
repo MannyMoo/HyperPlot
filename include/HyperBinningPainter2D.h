@@ -65,6 +65,10 @@ class HyperBinningPainter2D : public HyperBinningPainter {
   void drawBinNumbers(RootPlotter2D* plotter);
   void drawBinNumbers(RootPlotter2D* plotter, int bin);
 
+  void drawBinCont(RootPlotter2D* plotter);
+  void drawBinCont(RootPlotter2D* plotter, int bin);
+
+
   public:
 
   HyperBinningPainter2D(BinningBase* binning, HyperPointSet* hyperPoints = 0);

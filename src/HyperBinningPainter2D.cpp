@@ -283,6 +283,7 @@ void HyperBinningPainter2D::drawBinNumbers(RootPlotter2D* plotter){
   for(int i = 0; i < getBinning().getNumBins(); i++) drawBinNumbers(plotter, i);
 }
 
+
 /** Draw bin number on a single bin */
 void HyperBinningPainter2D::drawBinNumbers(RootPlotter2D* plotter, int bin){
   HyperPoint center = getBinning().getBinHyperVolume(bin).getAverageCenter();
@@ -290,6 +291,22 @@ void HyperBinningPainter2D::drawBinNumbers(RootPlotter2D* plotter, int bin){
   plotter->addText( label ,center.at(0), center.at(1), 2, 2, 0.02, 0);
 
 }
+
+/** Draw bin contents on the all the bins */
+void HyperBinningPainter2D::drawBinCont(RootPlotter2D* plotter){
+  for(int i = 0; i < getBinning().getNumBins(); i++) drawBinCont(plotter, i);
+}
+
+
+/** Draw bin content on a single bin */
+void HyperBinningPainter2D::drawBinCont(RootPlotter2D* plotter, int bin){
+  HyperPoint center = getBinning().getBinHyperVolume(bin).getAverageCenter();
+  double binCont = _histogram->getBinContent(bin );
+  TString label = ""; label += binCont;
+  plotter->addText( label ,center.at(0), center.at(1), 2, 2, 0.02, 0);
+
+}
+
 
 /** add filled bins to the Plotter (for all HyperVolumes) */
 void HyperBinningPainter2D::drawFilledBins(RootPlotter2D* plotter, bool hashNeg ){
@@ -356,6 +373,7 @@ void HyperBinningPainter2D::draw(TString path, TString option){
   bool drawBinEd2     = option.Contains("Edges2" );
   bool drawBinNums    = option.Contains("BinNums");
   bool drawHashedNeg  = option.Contains("HashNeg");
+  bool drawBinContOp  = option.Contains("Text");
 
   double x_min = getBinning().getMin(0);
   double x_max = getBinning().getMax(0);
@@ -405,6 +423,8 @@ void HyperBinningPainter2D::draw(TString path, TString option){
     if (drawBinEd1    ) drawBinEdges  (&plotter);
     if (drawBinEd2    ) drawBinEdges2 (&plotter);
     if (drawBinNums   ) drawBinNumbers(&plotter);
+    if (drawBinContOp ) drawBinCont   (&plotter);
+
   }
 
   plotter.plot(path, "COLZ");
