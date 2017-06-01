@@ -48,6 +48,7 @@ class HistogramBase {
   int checkBinNumber(int bin) const;
 
   void resetBinContents(int nBins);
+  void clear();
 
   void fillBase(int binNum, double weight);
   
@@ -68,10 +69,15 @@ class HistogramBase {
   void minus(const HistogramBase& other);
 
   void pulls(const HistogramBase& other);
+  void pulls(const HistogramBase& other1, const HistogramBase& other2);
+  void asymmetry(const HistogramBase& other);
+  void asymmetry(const HistogramBase& other1, const HistogramBase& other2);
 
   void drawPullHistogram(const HistogramBase& other, TString name, int nBins = 50, double pmLimits = 3.5) const;
   double chi2(const HistogramBase& other) const;
   double pvalue(const HistogramBase& other, int ndof = -1) const;
+  double chi2sig(const HistogramBase& other, int ndof = -1) const;
+
 
   double integral() const;
   double integralError() const;

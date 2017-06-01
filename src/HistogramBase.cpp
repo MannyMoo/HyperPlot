@@ -25,6 +25,15 @@ void HistogramBase::resetBinContents(int nBins){
   _sumW2       = std::vector<double>(nBins+1,0.0);
 }
 
+void HistogramBase::clear(){
+  for (unsigned i = 0; i < _binContents.size(); i++){
+    _binContents.at(i) = 0.0;
+    _sumW2      .at(i) = 0.0;
+  }
+}
+
+
+
 ///
 void HistogramBase::reserveCapacity(int nElements){
   _binContents.reserve(nElements+1);
@@ -361,6 +370,101 @@ void HistogramBase::pulls(const HistogramBase& other){
   _max = -999.9;  
 }
 
+
+///Find pulls between two histograms.
+///Histograms must have the same number of bins
+void HistogramBase::pulls(const HistogramBase& other1, const HistogramBase& other2){
+
+  if (other1._binContents.size() != _binContents.size() || other2._binContents.size() != _binContents.size()){
+    ERROR_LOG << "Trying to divide histograms with different numbers of bins. Doing nothing.";
+    return;
+  }
+
+  for( int i = 0; i < getNBins(); i++){
+
+    double binCont1 = other1._binContents.at(i);
+    double binCont2 = other2._binContents.at(i);
+    double var1     = other1._sumW2.at(i);
+    double var2     = other2._sumW2.at(i);
+
+    double content = binCont1 - binCont2;
+    double var     = var1 + var2;
+
+    _binContents.at(i) = content/sqrt(var);
+    _sumW2.at(i)       = 0.0;
+
+  }
+  
+  //reset min and max to default values
+  _min = -999.9;
+  _max = -999.9;  
+}
+
+
+void HistogramBase::asymmetry(const HistogramBase& other){
+
+  if (other._binContents.size() != _binContents.size()){
+    ERROR_LOG << "Trying to divide histograms with different numbers of bins. Doing nothing.";
+    return;
+  }
+
+  for( int i = 0; i < getNBins(); i++){
+
+    double binCont1 =       _binContents.at(i);
+    double binCont2 = other._binContents.at(i);
+    double var1     =       _sumW2.at(i);
+    double var2     = other._sumW2.at(i);
+
+    double content = (binCont1 - binCont2)/(binCont1 + binCont2);
+    
+    double dzdx  = (2.0*binCont2)/((binCont1 + binCont2)*(binCont1 + binCont2));
+    double dzdy  = (2.0*binCont1)/((binCont1 + binCont2)*(binCont1 + binCont2));
+    double varsq = dzdx*dzdx*var1*var1 + dzdy*dzdy*var2*var2;
+
+    _binContents.at(i) = content;
+    _sumW2.at(i)       = varsq;
+
+  }
+  
+  //reset min and max to default values
+  _min = -999.9;
+  _max = -999.9;  
+
+}
+
+void HistogramBase::asymmetry(const HistogramBase& other1, const HistogramBase& other2){
+
+  if (other1._binContents.size() != _binContents.size() || other2._binContents.size() != _binContents.size()){
+    ERROR_LOG << "Trying to divide histograms with different numbers of bins. Doing nothing.";
+    return;
+  }
+
+  for( int i = 0; i < getNBins(); i++){
+
+    double binCont1 = other1._binContents.at(i);
+    double binCont2 = other2._binContents.at(i);
+    double var1     = other1._sumW2.at(i);
+    double var2     = other2._sumW2.at(i);
+
+    double content = (binCont1 - binCont2)/(binCont1 + binCont2);
+    
+    double dzdx  = (2.0*binCont2)/((binCont1 + binCont2)*(binCont1 + binCont2));
+    double dzdy  = (2.0*binCont1)/((binCont1 + binCont2)*(binCont1 + binCont2));
+    double varsq = dzdx*dzdx*var1*var1 + dzdy*dzdy*var2*var2;
+
+    _binContents.at(i) = content;
+    _sumW2.at(i)       = varsq;
+
+  }
+  
+  //reset min and max to default values
+  _min = -999.9;
+  _max = -999.9;  
+
+}
+
+
+
 ///Randomise the histogram within it's Gaussian errors using
 ///the given seed.
 ///If value is < 0.0 then content is set to 0.0.
@@ -393,6 +497,18 @@ double HistogramBase::pvalue(const HistogramBase& other, int ndof) const{
   return TMath::Prob(chi2, ndof);
 
 }
+
+///Calculate the significance of the chi2 value obtained (in #sigma) given that
+///it follows a chi2 distribution for ndof degrees of freedom. If
+///ndof is not given it is assumed that ndof == nbins
+double HistogramBase::chi2sig(const HistogramBase& other, int ndof) const{
+  
+  double pval = pvalue(other, ndof);
+  double sigma = TMath::NormQuantile( pval/2.0 );
+  return fabs(sigma);
+
+}
+
 
 ///Calculate the chi2 between this histogram and another.
 ///Histograms must have the same number of bins
