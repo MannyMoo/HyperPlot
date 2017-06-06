@@ -59,7 +59,8 @@ class HyperPointSet {
   double   getCovarience(int i, int j) const;
   TMatrixD getCovarienceMatrix() const;
   
-  //HyperCuboid getLimits() const;
+  HyperPoint getMin() const;
+  HyperPoint getMax() const;
 
   HyperPoint mean()          const;
   HyperPoint geometricMean() const; 

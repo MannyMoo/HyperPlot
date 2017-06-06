@@ -397,23 +397,52 @@ void HyperPointSet::load(TString path){
   file->Close();
 
 }
-/*
-HyperCuboid HyperPointSet::getLimits() const{
 
-  HyperCuboid limits(getDimension());
+///Get a HyperCuboid that surrounds the points
+//HyperCuboid HyperPointSet::getLimits() const{
+//
+//  HyperCuboid limits(getDimension());
+//
+//  for (int i = 0; i < getDimension(); i++){
+//    MinMaxFinder minMax;
+//    for (unsigned j = 0; j < size(); j++){
+//      minMax.add( this->at(j).at(i) );
+//    }
+//    limits.getLowCorner() .at(i) = minMax.getMin();
+//    limits.getHighCorner().at(i) = minMax.getMax();
+//  }
+//  
+//  return limits;
+//}
+
+///Get a HyperPoint that gives the minimum in each dim
+HyperPoint HyperPointSet::getMin() const{
+  HyperPoint val(getDimension());
 
   for (int i = 0; i < getDimension(); i++){
     MinMaxFinder minMax;
     for (unsigned j = 0; j < size(); j++){
       minMax.add( this->at(j).at(i) );
     }
-    limits.getLowCorner() .at(i) = minMax.getMin();
-    limits.getHighCorner().at(i) = minMax.getMax();
+    val.at(i) = minMax.getMin();
   }
-  
-  return limits;
+  return val;
 }
-*/
+
+///Get a HyperPoint that gives the maximum in each dim
+HyperPoint HyperPointSet::getMax() const{
+  HyperPoint val(getDimension());
+
+  for (int i = 0; i < getDimension(); i++){
+    MinMaxFinder minMax;
+    for (unsigned j = 0; j < size(); j++){
+      minMax.add( this->at(j).at(i) );
+    }
+    val.at(i) = minMax.getMax();
+  }
+  return val;
+}
+
 
 ///Get the arithmatic mean of all points.
 ///This does not use the weights.
