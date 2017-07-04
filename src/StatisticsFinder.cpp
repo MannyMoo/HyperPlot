@@ -1,5 +1,7 @@
 #include "StatisticsFinder.h"
 
+#include <algorithm>
+
 #define NOT_STORED_VAL -999999.9
 
 /**
@@ -51,9 +53,19 @@ void StatisticsFinder::warnIfWeightedEvents() const{
 double StatisticsFinder::median() const{
   if ( needOrderedEvents() == 0) return 0.0;
   warnIfWeightedEvents();
+  
+  std::sort(_orderedEvents.begin(),_orderedEvents.end());
+  
+  int nEntries = _orderedEvents.size();
 
-  ERROR_LOG << "Haven't implemented this yet";
-  return 0.0;
+  if (nEntries % 2 == 0){
+    int lowi  = (nEntries/2) - 1;
+    int highi = (nEntries/2);
+    return 0.5*(_orderedEvents.at(lowi) + _orderedEvents.at(highi));
+  }
+  
+  return _orderedEvents.at( (nEntries - 1)/2 );
+
 }
 
 /**
@@ -88,7 +100,7 @@ void StatisticsFinder::add(const double& x, const double& weight){
 
   if ( _keepOrderedEvents == 1) _orderedEvents.push_back(x);
   
-  _nEvents++;
+  _nEvents += 1.0;
 }
  
 /**

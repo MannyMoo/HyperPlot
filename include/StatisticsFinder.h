@@ -12,7 +12,6 @@
 
 #include "MessageService.h"
 
-
 class StatisticsFinder {
 
   double _min;     /**< The smallest member added to the StatisticsFinder */
@@ -29,7 +28,7 @@ class StatisticsFinder {
   //allowing things like the median to be calculated
 
   int _keepOrderedEvents; /**<  Keep a list of the values added (so the median can be found) */
-  std::vector<double> _orderedEvents; /**<  list of the values added  */
+  mutable std::vector<double> _orderedEvents; /**<  list of the values added  */
 
   bool needOrderedEvents() const;
   void warnIfWeightedEvents() const;
@@ -129,6 +128,21 @@ class WidthErrorFinder : public StatisticsFinder{
   public:
   WidthErrorFinder() : StatisticsFinder(1,1,1,0){} /**< Constructor */
   ~WidthErrorFinder(){} /**< Destructor */
+
+};
+
+/**
+ * <B>HyperPlot</B>,
+ * Author: Sam Harnew, sam.harnew@gmail.com ,
+ * Date: Dec 2015
+ *
+ * Make a StatisticsFinder, and let it store enough info
+ * to calculate the median 
+ **/
+class MedianFinder : public StatisticsFinder{
+  public:
+  MedianFinder() : StatisticsFinder(1,1,1,1){} /**< Constructor */
+  ~MedianFinder(){} /**< Destructor */
 
 };
 
