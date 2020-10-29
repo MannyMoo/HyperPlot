@@ -12,6 +12,7 @@ find_package(ROOT COMPONENTS Core RIO Hist MathCore
                 	     Postscript Gpad
 			     Tree TreePlayer
 			     Matrix)
+find_package(TBB)
 
 # override the genreflex call to wrap it in the right environment
 # set(ROOT_genreflex_CMD ${env_cmd} --xml ${env_xml} ${ROOT_genreflex_CMD})
@@ -26,7 +27,7 @@ gaudi_add_library(HyperPlotLib
 #                   HyperPlotDict_classdef.cpp
                   PUBLIC_HEADERS include
                   INCLUDE_DIRS Boost ROOT include
-                  LINK_LIBRARIES Boost ROOT)
+                  LINK_LIBRARIES Boost ROOT TBB)
 
 # gaudi_add_module(HyperPlot
 #                  src/*.cpp
@@ -39,3 +40,5 @@ gaudi_add_library(HyperPlotLib
 #gaudi_install_python_modules()
 
 #gaudi_add_test(QMTest QMTEST)
+
+gaudi_add_executable(TestHyperBinning example/src/TestBinning.cpp LINK_LIBRARIES HyperPlotLib)
